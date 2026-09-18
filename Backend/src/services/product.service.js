@@ -111,6 +111,37 @@ const listProducts = async (query) => {
   };
 };
 
+const listAdminProducts = async (query) => {
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+  const skip = (page - 1) * limit;
+  const filter = {};
+
+  if (query.search) {
+    filter.$text = { $search: query.search };
+  }
+  if (query.category) {
+    filter.category = query.category;
+  }
+  if (query.isActive === 'true') filter.isActive = true;
+  if (query.isActive === 'false') filter.isActive = false;
+
+  const [items, total] = await Promise.all([
+    Product.find(filter)
+      .populate('category', 'name slug')
+      .populate('subCategory', 'name slug')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Product.countDocuments(filter),
+  ]);
+
+  return {
+    items,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+  };
+};
+
 const getProductById = async (id) => {
   const product = await Product.findOne({ _id: id, isActive: true })
     .populate('category', 'name slug')
@@ -254,6 +285,7 @@ const recalculateProductRating = async (productId) => {
 
 module.exports = {
   listProducts,
+  listAdminProducts,
   getProductById,
   getProductBySlug,
   getFeaturedProducts,

@@ -10,6 +10,14 @@ const listProducts = asyncHandler(async (req, res) => {
   });
 });
 
+const adminListProducts = asyncHandler(async (req, res) => {
+  const result = await productService.listAdminProducts(req.query);
+  return sendSuccess(res, {
+    message: 'Products fetched successfully',
+    data: result,
+  });
+});
+
 const getFeaturedProducts = asyncHandler(async (req, res) => {
   const limit = Number(req.query.limit) || 12;
   const products = await productService.getFeaturedProducts(limit);
@@ -70,6 +78,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
 
 module.exports = {
   listProducts,
+  adminListProducts,
   getFeaturedProducts,
   getProductsByCategory,
   getProductBySlug,

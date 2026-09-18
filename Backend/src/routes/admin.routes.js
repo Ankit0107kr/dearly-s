@@ -27,6 +27,7 @@ router.post('/categories', categoryController.createCategory);
 router.patch('/categories/:id', categoryController.updateCategory);
 router.delete('/categories/:id', categoryController.deleteCategory);
 
+router.get('/products', productController.adminListProducts);
 router.post(
   '/products',
   imageUpload.array('images', 10),
