@@ -1,0 +1,268 @@
+const Product = require('../models/Product');
+const Category = require('../models/Category');
+const { slugify, pickDefined } = require('../utils/helpers');
+const { uploadBufferToCloudinary, deleteCloudinaryAsset } = require('../utils/upload');
+const { CUSTOMIZATION_FIELD_TYPES } = require('../utils/constants');
+
+const getUnitPrice = (product, variant) => {
+  if (variant && variant.price != null) {
+    return variant.price;
+  }
+  if (product.discountPrice != null) {
+    return product.discountPrice;
+  }
+  return product.price;
+};
+
+const validateCustomizationInput = (product, customization = []) => {
+  const fields = product.customizationFields || [];
+  const providedMap = new Map(customization.map((item) => [item.name, item]));
+
+  for (const field of fields) {
+    const provided = providedMap.get(field.name);
+    if (field.required && (!provided || (!provided.value && !provided.imageUrl))) {
+      const error = new Error(`Customization field "${field.name}" is required`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (provided && field.type === CUSTOMIZATION_FIELD_TYPES.SELECT && field.options?.length) {
+      if (!field.options.includes(provided.value)) {
+        const error = new Error(`Invalid option for "${field.name}"`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+  }
+};
+
+const buildProductListQuery = (query) => {
+  const filter = { isActive: true };
+  const options = {
+    page: Math.max(1, Number(query.page) || 1),
+    limit: Math.min(100, Math.max(1, Number(query.limit) || 20)),
+    sort: { createdAt: -1 },
+  };
+
+  if (query.search) {
+    filter.$text = { $search: query.search };
+  }
+
+  if (query.category) {
+    filter.category = query.category;
+  }
+
+  if (query.minPrice || query.maxPrice) {
+    filter.price = {};
+    if (query.minPrice) filter.price.$gte = Number(query.minPrice);
+    if (query.maxPrice) filter.price.$lte = Number(query.maxPrice);
+  }
+
+  if (query.rating) {
+    filter.rating = { $gte: Number(query.rating) };
+  }
+
+  if (query.featured === 'true') {
+    filter.isFeatured = true;
+  }
+
+  switch (query.sort) {
+    case 'price_asc':
+      options.sort = { price: 1 };
+      break;
+    case 'price_desc':
+      options.sort = { price: -1 };
+      break;
+    case 'rating_desc':
+      options.sort = { rating: -1 };
+      break;
+    case 'newest':
+      options.sort = { createdAt: -1 };
+      break;
+    default:
+      break;
+  }
+
+  return { filter, options };
+};
+
+const listProducts = async (query) => {
+  const { filter, options } = buildProductListQuery(query);
+  const skip = (options.page - 1) * options.limit;
+
+  const [items, total] = await Promise.all([
+    Product.find(filter)
+      .populate('category', 'name slug')
+      .populate('subCategory', 'name slug')
+      .sort(options.sort)
+      .skip(skip)
+      .limit(options.limit),
+    Product.countDocuments(filter),
+  ]);
+
+  return {
+    items,
+    pagination: {
+      page: options.page,
+      limit: options.limit,
+      total,
+      totalPages: Math.ceil(total / options.limit) || 1,
+    },
+  };
+};
+
+const getProductById = async (id) => {
+  const product = await Product.findOne({ _id: id, isActive: true })
+    .populate('category', 'name slug')
+    .populate('subCategory', 'name slug');
+
+  if (!product) {
+    const error = new Error('Product not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return product;
+};
+
+const getProductBySlug = async (slug) => {
+  const product = await Product.findOne({ slug: slug.toLowerCase(), isActive: true })
+    .populate('category', 'name slug')
+    .populate('subCategory', 'name slug');
+
+  if (!product) {
+    const error = new Error('Product not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return product;
+};
+
+const getFeaturedProducts = async (limit = 12) =>
+  Product.find({ isActive: true, isFeatured: true })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate('category', 'name slug');
+
+const getProductsByCategory = async (categoryId, query) =>
+  listProducts({ ...query, category: categoryId });
+
+const ensureUniqueSlug = async (name, excludeId) => {
+  const base = slugify(name);
+  let slug = base;
+  let counter = 1;
+
+  while (true) {
+    const existing = await Product.findOne({
+      slug,
+      ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+    });
+    if (!existing) {
+      return slug;
+    }
+    slug = `${base}-${counter}`;
+    counter += 1;
+  }
+};
+
+const uploadImages = async (files = []) => {
+  const uploads = [];
+  for (const file of files) {
+    const uploaded = await uploadBufferToCloudinary(file.buffer, 'dearlys/products');
+    uploads.push({ url: uploaded.url, publicId: uploaded.publicId, alt: file.originalname });
+  }
+  return uploads;
+};
+
+const createProduct = async (payload, files = []) => {
+  const category = await Category.findById(payload.category);
+  if (!category || !category.isActive) {
+    const error = new Error('Invalid category');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const slug = payload.slug ? slugify(payload.slug) : await ensureUniqueSlug(payload.name);
+  const images = await uploadImages(files);
+
+  const product = await Product.create({
+    ...payload,
+    slug,
+    images: images.length ? images : payload.images || [],
+  });
+
+  return product;
+};
+
+const updateProduct = async (id, payload, files = []) => {
+  const product = await Product.findById(id);
+  if (!product) {
+    const error = new Error('Product not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const updates = pickDefined(payload);
+  if (updates.name && !updates.slug) {
+    updates.slug = await ensureUniqueSlug(updates.name, id);
+  } else if (updates.slug) {
+    updates.slug = slugify(updates.slug);
+  }
+
+  if (files.length) {
+    const uploaded = await uploadImages(files);
+    updates.images = [...(product.images || []), ...uploaded];
+  }
+
+  Object.assign(product, updates);
+  await product.save();
+  return product;
+};
+
+const softDeleteProduct = async (id) => {
+  const product = await Product.findById(id);
+  if (!product) {
+    const error = new Error('Product not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  product.isActive = false;
+  await product.save();
+  return product;
+};
+
+const recalculateProductRating = async (productId) => {
+  const Review = require('../models/Review');
+  const stats = await Review.aggregate([
+    { $match: { productId: productId, isApproved: true } },
+    {
+      $group: {
+        _id: '$productId',
+        avgRating: { $avg: '$rating' },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const rating = stats[0]?.avgRating ? Number(stats[0].avgRating.toFixed(2)) : 0;
+  const reviewCount = stats[0]?.count || 0;
+
+  await Product.findByIdAndUpdate(productId, { rating, reviewCount });
+  return { rating, reviewCount };
+};
+
+module.exports = {
+  listProducts,
+  getProductById,
+  getProductBySlug,
+  getFeaturedProducts,
+  getProductsByCategory,
+  createProduct,
+  updateProduct,
+  softDeleteProduct,
+  getUnitPrice,
+  validateCustomizationInput,
+  recalculateProductRating,
+  deleteCloudinaryAsset,
+};

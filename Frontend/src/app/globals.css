@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+/* ============================================================
+   GIFTY DESIGN SYSTEM
+   One accent hue (lavender/violet) on a soft lilac base, carried
+   through gradients rather than flat fills.
+   Every size token is fluid: clamp(min, vw-based, max). Because
+   Tailwind v4 derives all spacing utilities from --spacing,
+   overriding it makes p-*, m-*, gap-*, w-*, h-* viewport-relative
+   across the whole app. No fixed px in layout.
+   ============================================================ */
+
+@theme {
+  /* --- fluid spacing base (drives every spacing utility) --- */
+  --spacing: clamp(0.2rem, 0.165rem + 0.175vw, 0.3rem);
+
+  /* --- fluid type scale --- */
+  --text-2xs: clamp(0.6rem, 0.57rem + 0.14vw, 0.69rem);
+  --text-2xs--line-height: 1.45;
+  --text-xs: clamp(0.69rem, 0.66rem + 0.16vw, 0.79rem);
+  --text-xs--line-height: 1.5;
+  --text-sm: clamp(0.79rem, 0.75rem + 0.19vw, 0.9rem);
+  --text-sm--line-height: 1.55;
+  --text-base: clamp(0.9rem, 0.86rem + 0.22vw, 1.03rem);
+  --text-base--line-height: 1.65;
+  --text-lg: clamp(1.03rem, 0.97rem + 0.28vw, 1.2rem);
+  --text-lg--line-height: 1.5;
+  --text-xl: clamp(1.18rem, 1.09rem + 0.42vw, 1.44rem);
+  --text-xl--line-height: 1.35;
+  --text-2xl: clamp(1.4rem, 1.24rem + 0.76vw, 1.85rem);
+  --text-2xl--line-height: 1.25;
+  --text-3xl: clamp(1.7rem, 1.43rem + 1.3vw, 2.5rem);
+  --text-3xl--line-height: 1.15;
+  --text-4xl: clamp(2.1rem, 1.6rem + 2.4vw, 3.5rem);
+  --text-4xl--line-height: 1.08;
+  --text-5xl: clamp(2.5rem, 1.6rem + 4.3vw, 5rem);
+  --text-5xl--line-height: 1.02;
+  --text-6xl: clamp(3rem, 1.5rem + 7vw, 6.5rem);
+  --text-6xl--line-height: 0.96;
+
+  /* --- neutrals, all carrying a violet cast --- */
+  --color-ink: #191231;
+  --color-ink-soft: #4e4570;
+  --color-ink-faint: #8b83a8;
+  --color-cream: #fbfaff;
+  --color-cream-deep: #f3f1fb;
+  --color-line: #e7e4f2;
+
+  /* --- the single accent: lavender --- */
+  --color-accent-50: #f4f0fe;
+  --color-accent-100: #e6dcfb;
+  --color-accent-300: #c3aef2;
+  --color-accent-400: #a98ce9;
+  --color-accent-600: #7a5ad6;
+  --color-accent-700: #5b3fae;
+
+  /* --- gradient stops --- */
+  --color-grad-from: #f8f6fe;
+  --color-grad-to: #f0edfa;
+
+  /* --- radii: restrained, classic --- */
+  --radius-xs: clamp(0.1rem, 0.08rem + 0.1vw, 0.15rem);
+  --radius-sm: clamp(0.15rem, 0.12rem + 0.15vw, 0.25rem);
+  --radius-md: clamp(0.2rem, 0.16rem + 0.2vw, 0.35rem);
+  --radius-lg: clamp(0.25rem, 0.2rem + 0.25vw, 0.45rem);
+  --radius-xl: clamp(0.3rem, 0.24rem + 0.3vw, 0.55rem);
+  --radius-2xl: clamp(0.4rem, 0.3rem + 0.4vw, 0.7rem);
+
+  /* --- shadows: barely there --- */
+  --shadow-soft: 0 0.4vh 1.6vh -0.8vh rgba(23, 21, 15, 0.1);
+  --shadow-lift: 0 1vh 3.5vh -1.2vh rgba(23, 21, 15, 0.16);
+
+  /* --- motion: one long ease, used everywhere --- */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-fade: fade 0.6s var(--ease-out-expo) both;
+  --animate-marquee: marquee 46s linear infinite;
+  --animate-rise: rise 0.8s var(--ease-out-expo) both;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(2vh); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: linear-gradient(176deg, #fdfdff 0%, var(--color-cream) 45%, #f4f1fc 100%);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Display type is the serif; UI and body stay in the sans. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+::selection {
+  background: var(--color-accent-100);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 0.2vh solid var(--color-accent-600);
+  outline-offset: 0.3vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  /* Scroll reveals must never leave content hidden when motion is off. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@utility shell {
+  width: min(92vw, 88rem);
+  margin-inline: auto;
+}
+
+@utility shell-tight {
+  width: min(92vw, 70rem);
+  margin-inline: auto;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* Classic link: a rule that draws itself in from the left on hover. */
+@utility link-sweep {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.25em;
+    height: 0.1vh;
+    min-height: 1px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.5s var(--ease-out-expo);
+  }
+  &:hover::after,
+  &:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+/* Thin uppercase label used above every section heading. */
+/* --- gradient surfaces --- */
+@utility gradient-accent {
+  background-image: linear-gradient(112deg, var(--color-accent-600), var(--color-accent-700));
+}
+
+@utility gradient-surface {
+  background-image: linear-gradient(158deg, var(--color-grad-from), var(--color-grad-to));
+}
+
+@utility gradient-ink {
+  background-image: linear-gradient(148deg, #221845, #150f2a 55%, #1d1439);
+}
+
+@utility font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+}
+
+@utility eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-accent-600);
+}
