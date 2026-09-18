@@ -5,6 +5,7 @@ import { CartDrawer } from "@/components/layout/CartDrawer";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { CartProvider } from "@/lib/cart";
+import { ApiLoadingBar } from "@/components/ui/ApiLoadingBar";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <CartProvider>
+          <ApiLoadingBar />
           <AnnouncementBar />
           <Header />
           <main className="flex-1">{children}</main>

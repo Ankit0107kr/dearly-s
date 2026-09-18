@@ -3,6 +3,7 @@ const authenticate = require('../middlewares/auth.middleware');
 const authorizeAdmin = require('../middlewares/admin.middleware');
 const validate = require('../middlewares/validation.middleware');
 const { imageUpload } = require('../middlewares/upload.middleware');
+const parseProductBody = require('../middlewares/parseProductBody.middleware');
 
 const adminController = require('../controllers/admin.controller');
 const categoryController = require('../controllers/category.controller');
@@ -23,20 +24,24 @@ router.get('/users', adminController.listUsers);
 
 router.post('/uploads', imageUpload.single('image'), uploadController.uploadImage);
 
+router.get('/categories', categoryController.listCategories);
 router.post('/categories', categoryController.createCategory);
 router.patch('/categories/:id', categoryController.updateCategory);
 router.delete('/categories/:id', categoryController.deleteCategory);
 
+// PRODUCTS
 router.get('/products', productController.adminListProducts);
 router.post(
   '/products',
   imageUpload.array('images', 10),
+  parseProductBody,
   validate(createProductSchema),
   productController.createProduct
 );
 router.patch(
   '/products/:id',
   imageUpload.array('images', 10),
+  parseProductBody,
   validate(updateProductSchema),
   productController.updateProduct
 );

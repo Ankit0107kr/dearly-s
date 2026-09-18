@@ -3,7 +3,8 @@ const { asyncHandler } = require('../utils/helpers');
 const { sendSuccess } = require('../utils/response');
 
 const listCategories = asyncHandler(async (req, res) => {
-  const categories = await categoryService.listCategories();
+  const includeInactive = req.query.includeInactive === 'true';
+  const categories = await categoryService.listCategories({ includeInactive });
   return sendSuccess(res, {
     message: 'Categories fetched successfully',
     data: { categories },

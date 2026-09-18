@@ -58,7 +58,7 @@ const createProduct = asyncHandler(async (req, res) => {
     message: 'Product created successfully',
     data: { product },
   });
-});
+}, 'CREATE PRODUCT');
 
 const updateProduct = asyncHandler(async (req, res) => {
   const product = await productService.updateProduct(req.params.id, req.body, req.files || []);

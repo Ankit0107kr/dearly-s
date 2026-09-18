@@ -197,33 +197,61 @@ const ensureUniqueSlug = async (name, excludeId) => {
   }
 };
 
+const rollbackUploadedImages = async (images = []) => {
+  for (const image of images) {
+    if (image?.publicId) {
+      await deleteCloudinaryAsset(image.publicId).catch(() => {});
+    }
+  }
+};
+
 const uploadImages = async (files = []) => {
   const uploads = [];
-  for (const file of files) {
-    const uploaded = await uploadBufferToCloudinary(file.buffer, 'dearlys/products');
-    uploads.push({ url: uploaded.url, publicId: uploaded.publicId, alt: file.originalname });
+  try {
+    for (const file of files) {
+      const uploaded = await uploadBufferToCloudinary(file.buffer, 'dearlys/products');
+      uploads.push({ url: uploaded.url, publicId: uploaded.publicId, alt: file.originalname });
+    }
+    return uploads;
+  } catch (error) {
+    await rollbackUploadedImages(uploads);
+    throw error;
   }
-  return uploads;
 };
 
 const createProduct = async (payload, files = []) => {
-  const category = await Category.findById(payload.category);
-  if (!category || !category.isActive) {
-    const error = new Error('Invalid category');
-    error.statusCode = 400;
+  let uploadedImages = [];
+  try {
+    const category = await Category.findById(payload.category);
+    if (!category || !category.isActive) {
+      const error = new Error('Invalid category');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (payload.subCategory) {
+      const subCategory = await Category.findById(payload.subCategory);
+      if (!subCategory || !subCategory.isActive) {
+        const error = new Error('Invalid subcategory');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    const slug = payload.slug ? slugify(payload.slug) : await ensureUniqueSlug(payload.name);
+    uploadedImages = await uploadImages(files);
+
+    const product = await Product.create({
+      ...payload,
+      slug,
+      images: uploadedImages.length ? uploadedImages : payload.images || [],
+    });
+
+    return product;
+  } catch (error) {
+    await rollbackUploadedImages(uploadedImages);
     throw error;
   }
-
-  const slug = payload.slug ? slugify(payload.slug) : await ensureUniqueSlug(payload.name);
-  const images = await uploadImages(files);
-
-  const product = await Product.create({
-    ...payload,
-    slug,
-    images: images.length ? images : payload.images || [],
-  });
-
-  return product;
 };
 
 const updateProduct = async (id, payload, files = []) => {
