@@ -2,13 +2,13 @@
   "info": {
     "_postman_id": "dearlys-api-collection",
     "name": "Dearly's API",
-    "description": "REST API for Dearly's e-commerce backend.\n\n## Base URL\n`{{baseUrl}}` (default: http://localhost:5000/api/v1)\n\n## Authentication\nProtected routes use an HTTP-only cookie named `access_token` set by **Auth → Login** or **Register**.\n\nIn Postman: enable cookies (Settings → automatically follow redirects / cookie jar). Call Login first; the cookie is sent on later requests.\n\n## Admin routes\nRequire a user with role `ADMIN`.\n\n## Response shape\n```json\n{ \"success\": true, \"message\": \"...\", \"data\": { ... } }\n```",
+    "description": "REST API for Dearly's e-commerce backend.\n\n## Base URL\n`{{baseUrl}}` (default: http://localhost:5001/api/v1)\n\n## Authentication\nProtected routes use an HTTP-only cookie named `access_token` set by **Auth → Login** or **Register**.\n\nIn Postman: enable cookies (cookie jar). Call Login first; the cookie is sent on later requests.\n\n## Addresses\n- `GET/POST /addresses` and `GET/POST /users/me/addresses` are equivalent (auth required).\n- First saved address is auto-set `isDefault: true`.\n- `PATCH .../addresses/:id/default` or `PATCH .../users/me/addresses/:id/default` sets the default shipping address.\n\n## Orders\n`POST /orders` requires `addressId` — must belong to the logged-in user. Cart must be non-empty.\n\n## Admin product images\n`POST /admin/products` accepts `multipart/form-data` with file field `images` (up to 10) plus text fields (`name`, `category`, `price`, etc.). JSON fields like `inventory` can be sent as JSON strings.\n\n## Admin routes\nRequire role `ADMIN` (auth middleware may be disabled in dev — check `admin.routes.js`).\n\n## Response shape\n```json\n{ \"success\": true, \"message\": \"...\", \"data\": { ... } }\n```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5000/api/v1"
+      "value": "http://localhost:5001/api/v1"
     },
     {
       "key": "productId",
@@ -225,6 +225,133 @@
               }
             }
           }
+        },
+        {
+          "name": "List my addresses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses"
+              ]
+            },
+            "description": "Same as GET /addresses. Sorted with `isDefault` first."
+          }
+        },
+        {
+          "name": "Add address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses"
+              ]
+            },
+            "description": "First address for the user is saved as default automatically.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"phone\": \"9876543210\",\n  \"addressLine1\": \"123 Main St\",\n  \"addressLine2\": \"\",\n  \"landmark\": \"\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"postalCode\": \"400001\",\n  \"addressType\": \"HOME\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update my address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses",
+                "{{addressId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Pune\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Set default address",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses/{{addressId}}/default",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses",
+                "{{addressId}}",
+                "default"
+              ]
+            },
+            "description": "Clears default on other addresses for this user."
+          }
+        },
+        {
+          "name": "Delete my address",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/addresses/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "addresses",
+                "{{addressId}}"
+              ]
+            },
+            "description": "If the default address is deleted, the newest remaining address becomes default."
+          }
         }
       ]
     },
@@ -303,6 +430,12 @@
                 {
                   "key": "category",
                   "value": "{{categoryId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "subCategory",
+                  "value": "",
+                  "description": "Category ObjectId (subcategory)",
                   "disabled": true
                 },
                 {
@@ -685,7 +818,7 @@
                 "addresses"
               ]
             },
-            "description": ""
+            "description": "Alias of GET /users/me/addresses. Requires auth cookie."
           }
         },
         {
@@ -707,7 +840,7 @@
                 "addresses"
               ]
             },
-            "description": "",
+            "description": "Alias of POST /users/me/addresses. First address is auto-default.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"phone\": \"9876543210\",\n  \"addressLine1\": \"123 Main St\",\n  \"addressLine2\": \"\",\n  \"landmark\": \"\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"postalCode\": \"400001\",\n  \"addressType\": \"HOME\",\n  \"isDefault\": true\n}",
@@ -752,6 +885,25 @@
           }
         },
         {
+          "name": "Set default address",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/addresses/{{addressId}}/default",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                "{{addressId}}",
+                "default"
+              ]
+            },
+            "description": "Alias of PATCH /users/me/addresses/:id/default"
+          }
+        },
+        {
           "name": "Delete address",
           "request": {
             "method": "DELETE",
@@ -793,7 +945,7 @@
                 "orders"
               ]
             },
-            "description": "",
+            "description": "Creates an order from the user's server cart. `addressId` must be an Address document owned by the user (see Users/Addresses). Snapshots shipping fields on the order.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\",\n  \"couponCode\": \"\",\n  \"deliveryType\": \"STANDARD\",\n  \"deliveryDate\": \"\",\n  \"deliverySlot\": \"\"\n}",
@@ -1142,6 +1294,30 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "name": "List categories (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/categories?includeInactive=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "categories"
+              ],
+              "query": [
+                {
+                  "key": "includeInactive",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Flat list with optional `includeInactive=true`."
           }
         },
         {
