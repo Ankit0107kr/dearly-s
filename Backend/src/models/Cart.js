@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { money, moneyJson } = require('../utils/money');
 
 const cartItemCustomizationSchema = new mongoose.Schema(
   {
@@ -20,7 +21,7 @@ const cartItemSchema = new mongoose.Schema(
     },
     variantId: { type: mongoose.Schema.Types.ObjectId },
     quantity: { type: Number, required: true, min: 1, default: 1 },
-    unitPrice: { type: Number, required: true, min: 0 },
+    unitPrice: money({ required: true }),
     customization: [cartItemCustomizationSchema],
   },
   { _id: true }
@@ -33,12 +34,11 @@ const cartSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
       unique: true,
-      index: true,
     },
     items: [cartItemSchema],
-    totalAmount: { type: Number, default: 0, min: 0 },
+    totalAmount: money({ default: 0 }),
   },
-  { timestamps: true }
+  { timestamps: true, ...moneyJson }
 );
 
 module.exports = mongoose.model('Cart', cartSchema);

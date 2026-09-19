@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Review = require('../models/Review');
 const { PAYMENT_STATUS, ORDER_STATUS } = require('../utils/constants');
+const { toNumber } = require('../utils/money');
 const { asyncHandler } = require('../utils/helpers');
 const { sendSuccess } = require('../utils/response');
 
@@ -18,7 +19,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     Review.countDocuments({ isApproved: false }),
   ]);
 
-  const revenue = revenueAgg[0]?.revenue || 0;
+  const revenue = toNumber(revenueAgg[0]?.revenue) || 0;
   const recentOrders = await Order.find()
     .sort({ createdAt: -1 })
     .limit(10)
@@ -43,10 +44,25 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 });
 
 const listUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select('-password').sort({ createdAt: -1 }).limit(100);
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+  const filter = req.query.role ? { role: req.query.role } : {};
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
   return sendSuccess(res, {
     message: 'Users fetched successfully',
-    data: { users },
+    data: {
+      users,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+    },
   });
 });
 

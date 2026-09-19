@@ -1,14 +1,25 @@
 const Coupon = require('../models/Coupon');
 const couponService = require('../services/coupon.service');
+const cartService = require('../services/cart.service');
 const { asyncHandler } = require('../utils/helpers');
 const { sendSuccess } = require('../utils/response');
 
 const validateCoupon = asyncHandler(async (req, res) => {
-  const subtotal = req.body.subtotal || 0;
+  const cart = await cartService.getCart(req.user._id);
+  if (!cart.items.length) {
+    const error = new Error('Cart is empty');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const result = await couponService.validateCouponForCart({
     code: req.body.code,
-    subtotal,
-    cartItems: req.body.cartItems || [],
+    userId: req.user._id,
+    cartItems: cart.items.map((item) => ({
+      productId: item.productId?._id || item.productId,
+      price: item.unitPrice,
+      quantity: item.quantity,
+    })),
   });
 
   return sendSuccess(res, {
@@ -17,6 +28,7 @@ const validateCoupon = asyncHandler(async (req, res) => {
       code: result.coupon.code,
       discount: result.discount,
       discountType: result.coupon.discountType,
+      eligibleSubtotal: result.eligibleSubtotal,
     },
   });
 });

@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const { env } = require('../config/env');
+const logger = require('../config/logger');
 
 let transporter = null;
 
@@ -27,7 +28,7 @@ const getTransporter = () => {
 const sendEmail = async ({ to, subject, html, text }) => {
   const mailer = getTransporter();
   if (!mailer) {
-    console.log('[email:skipped]', { to, subject });
+    logger.info({ to, subject }, 'Email skipped: SMTP not configured');
     return { skipped: true };
   }
 
@@ -42,13 +43,15 @@ const sendEmail = async ({ to, subject, html, text }) => {
   return info;
 };
 
-const sendOrderConfirmationEmail = async (user, order) =>
-  sendEmail({
+const sendOrderConfirmationEmail = async (user, order) => {
+  const reference = order.orderNumber || order._id;
+  return sendEmail({
     to: user.email,
-    subject: `Order confirmed — ${order._id}`,
+    subject: `Order confirmed — ${reference}`,
     text: `Hi ${user.firstName}, your order total is INR ${order.totalAmount}.`,
-    html: `<p>Hi ${user.firstName},</p><p>Your order <strong>${order._id}</strong> has been placed. Total: INR ${order.totalAmount}.</p>`,
+    html: `<p>Hi ${user.firstName},</p><p>Your order <strong>${reference}</strong> has been placed. Total: INR ${order.totalAmount}.</p>`,
   });
+};
 
 module.exports = {
   sendEmail,

@@ -3,20 +3,71 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Address = require('../models/Address');
 const Product = require('../models/Product');
+const Counter = require('../models/Counter');
 const {
   ORDER_STATUS,
+  ORDER_STATUS_TRANSITIONS,
   PAYMENT_STATUS,
+  TAX_RATE,
 } = require('../utils/constants');
 const productService = require('./product.service');
 const inventoryService = require('./inventory.service');
 const couponService = require('./coupon.service');
 const deliveryService = require('./delivery.service');
+const reservationService = require('./reservation.service');
+const { round2 } = require('../utils/money');
 
-const buildOrderItemsFromCart = async (cart) => {
+// Required lazily: payment.service requires this module back.
+const refundAfterCommit = (orderId) => require('./payment.service').refundOrderPayment(orderId);
+
+const nextOrderNumber = async (session) => {
+  const counter = await Counter.findByIdAndUpdate(
+    'order',
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, session }
+  );
+  return `DRL-${String(counter.seq).padStart(6, '0')}`;
+};
+
+const recordStatus = (order, status, { by, note } = {}) => {
+  order.orderStatus = status;
+  order.statusHistory.push({ status, at: new Date(), by, note });
+};
+
+// Shared by customer cancellation and the admin transition so stock and refund
+// state can never be skipped by going through the admin path.
+const applyCancellation = async (order, session, actor) => {
+  const wasPaid = order.paymentStatus === PAYMENT_STATUS.PAID;
+
+  for (const item of order.items) {
+    const args = {
+      productId: item.productId,
+      variantId: item.variantId,
+      quantity: item.quantity,
+      session,
+    };
+    await (wasPaid ? inventoryService.restoreStock(args) : inventoryService.releaseStock(args));
+  }
+
+  if (order.couponId) {
+    await couponService.releaseRedemption({ couponId: order.couponId, userId: order.userId }, session);
+  }
+
+  order.reservationExpiresAt = undefined;
+
+  if (wasPaid) {
+    order.paymentStatus = PAYMENT_STATUS.REFUNDED;
+    recordStatus(order, ORDER_STATUS.REFUNDED, actor);
+  } else {
+    recordStatus(order, ORDER_STATUS.CANCELLED, actor);
+  }
+};
+
+const buildOrderItemsFromCart = async (cart, session) => {
   const items = [];
 
   for (const cartItem of cart.items) {
-    const product = await Product.findById(cartItem.productId);
+    const product = await Product.findById(cartItem.productId).session(session);
     if (!product || !product.isActive) {
       const error = new Error(`Product ${cartItem.productId} is unavailable`);
       error.statusCode = 400;
@@ -35,6 +86,7 @@ const buildOrderItemsFromCart = async (cart) => {
       productId: product._id,
       variantId: cartItem.variantId,
       quantity: cartItem.quantity,
+      session,
     });
 
     const unitPrice = productService.getUnitPrice(product, variant);
@@ -44,7 +96,7 @@ const buildOrderItemsFromCart = async (cart) => {
       productId: product._id,
       productName: product.name,
       image,
-      price: unitPrice,
+      price: round2(unitPrice),
       quantity: cartItem.quantity,
       variantId: cartItem.variantId,
       variantLabel: variant?.label || null,
@@ -55,7 +107,14 @@ const buildOrderItemsFromCart = async (cart) => {
   return items;
 };
 
-const createOrderFromCart = async (userId, payload) => {
+const createOrderFromCart = async (userId, payload, idempotencyKey) => {
+  if (idempotencyKey) {
+    const replay = await Order.findOne({ userId, idempotencyKey });
+    if (replay) {
+      return { order: replay, payment: null, replayed: true };
+    }
+  }
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -83,8 +142,8 @@ const createOrderFromCart = async (userId, payload) => {
       deliverySlot: payload.deliverySlot,
     });
 
-    const orderItems = await buildOrderItemsFromCart(cart);
-    const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const orderItems = await buildOrderItemsFromCart(cart, session);
+    const subtotal = round2(orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0));
 
     let discount = 0;
     let couponId;
@@ -93,20 +152,25 @@ const createOrderFromCart = async (userId, payload) => {
     if (payload.couponCode) {
       const couponResult = await couponService.validateCouponForCart({
         code: payload.couponCode,
-        subtotal,
         cartItems: orderItems,
+        userId,
       });
       discount = couponResult.discount;
       couponId = couponResult.coupon._id;
       couponCode = couponResult.coupon.code;
     }
 
+    // Free shipping is earned on what the customer actually pays for goods, so a
+    // large coupon cannot buy free delivery on a small order.
+    const taxable = round2(Math.max(0, subtotal - discount));
     const deliveryFee = deliveryService.calculateDeliveryFee({
       deliveryType: payload.deliveryType,
-      city: address.city,
+      subtotal: taxable,
     });
 
-    const totalAmount = Math.max(0, subtotal - discount + deliveryFee);
+    // Tax applies to the discounted goods value, not to delivery.
+    const tax = round2(taxable * TAX_RATE);
+    const totalAmount = round2(taxable + deliveryFee + tax);
 
     for (const item of orderItems) {
       await inventoryService.reserveStock({
@@ -137,14 +201,19 @@ const createOrderFromCart = async (userId, payload) => {
           subtotal,
           discount,
           deliveryFee,
+          tax,
           totalAmount,
           couponId,
           couponCode,
+          orderNumber: await nextOrderNumber(session),
           paymentStatus: PAYMENT_STATUS.PENDING,
           orderStatus: ORDER_STATUS.PLACED,
+          statusHistory: [{ status: ORDER_STATUS.PLACED, at: new Date(), by: userId }],
           deliveryDate: payload.deliveryDate,
           deliverySlot: payload.deliverySlot,
           deliveryType: payload.deliveryType,
+          idempotencyKey,
+          reservationExpiresAt: reservationService.getReservationExpiry(),
         },
       ],
       { session }
@@ -152,6 +221,7 @@ const createOrderFromCart = async (userId, payload) => {
 
     if (couponId) {
       await couponService.incrementCouponUsage(couponId, session);
+      await couponService.recordRedemption({ couponId, userId, orderId: order._id }, session);
     }
 
     cart.items = [];
@@ -218,38 +288,21 @@ const cancelOrder = async (userId, orderId) => {
       throw error;
     }
 
-    if ([ORDER_STATUS.SHIPPED, ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED].includes(order.orderStatus)) {
+    const cancellable = ORDER_STATUS_TRANSITIONS[order.orderStatus] || [];
+    if (!cancellable.includes(ORDER_STATUS.CANCELLED)) {
       const error = new Error('Order cannot be cancelled at this stage');
       error.statusCode = 400;
       throw error;
     }
 
-    for (const item of order.items) {
-      if (order.paymentStatus === PAYMENT_STATUS.PAID) {
-        await inventoryService.restoreStock({
-          productId: item.productId,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          session,
-        });
-      } else {
-        await inventoryService.releaseStock({
-          productId: item.productId,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          session,
-        });
-      }
-    }
-
-    order.orderStatus = ORDER_STATUS.CANCELLED;
-    if (order.paymentStatus === PAYMENT_STATUS.PAID) {
-      order.paymentStatus = PAYMENT_STATUS.REFUNDED;
-      order.orderStatus = ORDER_STATUS.REFUNDED;
-    }
-
+    const wasPaid = order.paymentStatus === PAYMENT_STATUS.PAID;
+    await applyCancellation(order, session, { by: userId, note: 'Cancelled by customer' });
     await order.save({ session });
     await session.commitTransaction();
+
+    if (wasPaid) {
+      await refundAfterCommit(order._id);
+    }
     return order;
   } catch (error) {
     await session.abortTransaction();
@@ -280,14 +333,60 @@ const markOrderPaid = async (orderId, session) => {
     });
   }
 
+  order.reservationExpiresAt = undefined;
   order.paymentStatus = PAYMENT_STATUS.PAID;
-  order.orderStatus = ORDER_STATUS.PAYMENT_CONFIRMED;
+  recordStatus(order, ORDER_STATUS.PAYMENT_CONFIRMED, { note: 'Payment captured' });
   await order.save({ session });
   return order;
 };
 
+const updateOrderStatus = async (orderId, status, { adminId, note } = {}) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const order = await Order.findById(orderId).session(session);
+    if (!order) {
+      const error = new Error('Order not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const allowed = ORDER_STATUS_TRANSITIONS[order.orderStatus] || [];
+    if (!allowed.includes(status)) {
+      const error = new Error(`Cannot move an order from ${order.orderStatus} to ${status}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const actor = { by: adminId, note };
+    const wasPaid = order.paymentStatus === PAYMENT_STATUS.PAID;
+    const cancelling = status === ORDER_STATUS.CANCELLED || status === ORDER_STATUS.REFUNDED;
+
+    if (cancelling) {
+      await applyCancellation(order, session, actor);
+    } else {
+      recordStatus(order, status, actor);
+    }
+
+    await order.save({ session });
+    await session.commitTransaction();
+
+    if (cancelling && wasPaid) {
+      await refundAfterCommit(order._id);
+    }
+    return order;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
 module.exports = {
   createOrderFromCart,
+  updateOrderStatus,
   getUserOrders,
   getOrderById,
   cancelOrder,
