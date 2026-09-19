@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ProductArt } from "@/components/ui/ProductArt";
@@ -21,10 +22,21 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-line bg-white transition-all duration-500 ease-out-expo hover:-translate-y-[0.8vh] hover:border-accent-300 hover:shadow-lift">
       <Link href={`/products/${product.slug}`} className="relative block">
-        <ProductArt
-          art={product.art}
-          className="aspect-[4/5] w-full"
-          motifClass="size-[9vh] transition-transform duration-700 ease-out-expo group-hover:scale-110"/>
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            width={600}
+            height={750}
+            className="aspect-[4/5] w-full object-cover transition-transform duration-700 ease-out-expo group-hover:scale-105"
+          />
+        ) : (
+          <ProductArt
+            art={product.art}
+            className="aspect-[4/5] w-full"
+            motifClass="size-[9vh] transition-transform duration-700 ease-out-expo group-hover:scale-110"
+          />
+        )}
 
         <div className="absolute top-0 left-0 flex w-full items-start justify-between p-3">
           <div className="flex flex-col gap-1">

@@ -1,60 +1,32 @@
-import { beginApiLoading, endApiLoading } from '@/lib/api-loading';
+import { API_PATHS, withQuery } from "@/lib/api-config";
+import { apiDelete, apiGet, apiPost, serverGet } from "@/lib/api-http";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-
-type ApiResponse<T> = {
-  success: boolean;
-  message: string;
-  data?: T;
-  error?: unknown;
-};
-
-export async function apiRequest<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  beginApiLoading();
-  try {
-    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      credentials: 'include',
-      headers: {
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        ...(options.headers || {}),
-      },
-    });
-
-    let payload: ApiResponse<T>;
-    try {
-      payload = (await response.json()) as ApiResponse<T>;
-    } catch {
-      throw new Error(response.ok ? 'Invalid response' : 'Request failed');
-    }
-
-    if (!response.ok) {
-      throw new Error(payload.message || 'Request failed');
-    }
-    return payload;
-  } finally {
-    endApiLoading();
-  }
-}
+export type { ApiResponse } from "@/lib/api-http";
+export { API_BASE_URL, API_PATHS, withQuery } from "@/lib/api-config";
+export { apiFetch, apiGet, apiPost, apiPatch, apiDelete, serverGet } from "@/lib/api-http";
 
 export const authApi = {
   register: (body: Record<string, string>) =>
-    apiRequest<{ user: unknown }>('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    apiPost<{ user: unknown }>(API_PATHS.auth.register, JSON.stringify(body)),
   login: (body: Record<string, string>) =>
-    apiRequest<{ user: unknown }>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
-  logout: () => apiRequest('/auth/logout', { method: 'POST' }),
-  me: () => apiRequest<{ user: unknown }>('/auth/me'),
+    apiPost<{ user: unknown }>(API_PATHS.auth.login, JSON.stringify(body)),
+  logout: () => apiPost(API_PATHS.auth.logout),
+  me: () => apiGet<{ user: unknown }>(API_PATHS.auth.me),
 };
 
 export const catalogApi = {
-  products: (query = '') => apiRequest(`/products${query ? `?${query}` : ''}`),
-  productBySlug: (slug: string) => apiRequest(`/products/slug/${slug}`),
-  featured: () => apiRequest('/products/featured'),
-  categories: () => apiRequest('/categories/tree'),
+  products: (query = "") =>
+    apiGet(withQuery(API_PATHS.products.list, query)),
+  productBySlug: (slug: string) =>
+    apiGet(API_PATHS.products.slug(slug)),
+  featured: () => apiGet(API_PATHS.products.featured),
+  categories: () => apiGet(API_PATHS.categories.tree),
+};
+
+/** Server Components (same routes as `catalogApi`). */
+export const catalogServer = {
+  products: <T>(query: string) => serverGet<T>(withQuery(API_PATHS.products.list, query)),
+  categories: <T>() => serverGet<T>(API_PATHS.categories.tree),
 };
 
 export type AdminCategory = {
@@ -66,18 +38,12 @@ export type AdminCategory = {
 
 export const adminApi = {
   categories: () =>
-    apiRequest<{ categories: AdminCategory[] }>('/admin/categories'),
-  products: (query = '') =>
-    apiRequest<{ items: unknown[]; pagination?: unknown }>(
-      `/admin/products${query ? `?${query}` : ''}`
+    apiGet<{ categories: AdminCategory[] }>(API_PATHS.admin.categories),
+  products: (query = "") =>
+    apiGet<{ items: unknown[]; pagination?: unknown }>(
+      withQuery(API_PATHS.admin.products, query),
     ),
   createProduct: (formData: FormData) =>
-    apiRequest<{ product: unknown }>('/admin/products', {
-      method: 'POST',
-      body: formData,
-    }),
-  deleteProduct: (id: string) =>
-    apiRequest(`/admin/products/${id}`, { method: 'DELETE' }),
+    apiPost<{ product: unknown }>(API_PATHS.admin.products, formData),
+  deleteProduct: (id: string) => apiDelete(API_PATHS.admin.product(id)),
 };
-
-export { API_BASE_URL };

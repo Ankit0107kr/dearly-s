@@ -52,6 +52,10 @@ const buildProductListQuery = (query) => {
     filter.category = query.category;
   }
 
+  if (query.subCategory) {
+    filter.subCategory = query.subCategory;
+  }
+
   if (query.minPrice || query.maxPrice) {
     filter.price = {};
     if (query.minPrice) filter.price.$gte = Number(query.minPrice);

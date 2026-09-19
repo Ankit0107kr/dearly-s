@@ -5,7 +5,17 @@ import { ActiveChips, Filters, MobileFilters, SortSelect } from "@/components/pl
 import { ProductCard } from "@/components/product/ProductCard";
 import { Reveal } from "@/components/ui/Reveal";
 import { categoryBySlug, occasionBySlug, occasions, subcategories } from "@/data/taxonomy";
-import { parseCatalogQuery, queryProducts } from "@/lib/catalog";
+import { parseCatalogQuery } from "@/lib/catalog";
+import { catalogServer } from "@/lib/api";
+import {
+  applyCatalogClientFilters,
+  catalogQueryToApiParams,
+  mapApiProductToProduct,
+  sortCatalogProducts,
+  type ApiCategoryNode,
+  type ApiProductListResult,
+} from "@/lib/product-catalog";
+import type { Product } from "@/lib/types";
 import { Motif } from "@/components/ui/Motif";
 
 export const metadata: Metadata = {
@@ -13,10 +23,30 @@ export const metadata: Metadata = {
   description: "Filter by category, subcategory, occasion and price.",
 };
 
+async function loadCatalogProducts(
+  query: ReturnType<typeof parseCatalogQuery>,
+): Promise<{ results: Product[]; error: string | null }> {
+  try {
+    const catRes = await catalogServer.categories<{ categories: ApiCategoryNode[] }>();
+    const tree = catRes.data?.categories ?? [];
+    const apiQuery = catalogQueryToApiParams(query, tree);
+    const prodRes = await catalogServer.products<ApiProductListResult>(apiQuery);
+    const items = (prodRes.data?.items ?? []).map(mapApiProductToProduct);
+    const filtered = applyCatalogClientFilters(items, query);
+    const results = sortCatalogProducts(filtered, query.sort);
+    return { results, error: null };
+  } catch (err) {
+    return {
+      results: [],
+      error: err instanceof Error ? err.message : "Could not load products",
+    };
+  }
+}
+
 export default async function ProductListPage(props: PageProps<"/products">) {
   const sp = await props.searchParams;
   const query = parseCatalogQuery(sp);
-  const results = queryProducts(query);
+  const { results, error } = await loadCatalogProducts(query);
 
   const category = query.category ? categoryBySlug.get(query.category) : undefined;
   const occasion = query.occasion ? occasionBySlug.get(query.occasion) : undefined;
@@ -27,7 +57,10 @@ export default async function ProductListPage(props: PageProps<"/products">) {
   const heading = subcategory?.name ?? category?.name ?? occasion?.name ?? "Every gift we make";
   const blurb =
     category?.blurb ??
-    (occasion ? `Gifts chosen for ${occasion.name.toLowerCase()} — ${occasion.window.toLowerCase()}.` : undefined) ?? "Twenty-four curated gifts, filterable by who it is for and what the occasion is.";
+    (occasion
+      ? `Gifts chosen for ${occasion.name.toLowerCase()} — ${occasion.window.toLowerCase()}.`
+      : undefined) ??
+    "Curated gifts from our catalog — filter by category, price and more.";
 
   return (
     <>
@@ -115,7 +148,12 @@ export default async function ProductListPage(props: PageProps<"/products">) {
             </Suspense>
           </div>
 
-          {results.length === 0 ? (
+          {error ? (
+            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-line bg-white py-[10vh] text-center">
+              <p className="text-xl font-bold">Could not load products</p>
+              <p className="max-w-[44ch] text-sm text-ink-soft">{error}</p>
+            </div>
+          ) : results.length === 0 ? (
             <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-line bg-white py-[10vh] text-center">
               <Motif name="search" className="size-14 text-ink-faint" strokeWidth={1.2} />
               <p className="text-xl font-bold">Nothing matches that combination</p>

@@ -36,6 +36,8 @@ export type Product = {
   specs: { label: string; value: string }[];
   personalisable: boolean;
   deliveryEta: string;
+  /** Cloudinary / CDN URL when loaded from the API. */
+  image?: string;
 };
 
 export type Subcategory = {
