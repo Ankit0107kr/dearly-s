@@ -11,11 +11,18 @@ const listAddresses = asyncHandler(async (req, res) => {
 });
 
 const createAddress = asyncHandler(async (req, res) => {
-  if (req.body.isDefault) {
+  const existingCount = await Address.countDocuments({ userId: req.user._id });
+  const shouldBeDefault = existingCount === 0 || Boolean(req.body.isDefault);
+
+  if (shouldBeDefault) {
     await Address.updateMany({ userId: req.user._id }, { isDefault: false });
   }
 
-  const address = await Address.create({ ...req.body, userId: req.user._id });
+  const address = await Address.create({
+    ...req.body,
+    userId: req.user._id,
+    isDefault: shouldBeDefault,
+  });
   return sendSuccess(res, {
     statusCode: 201,
     message: 'Address created successfully',
@@ -44,12 +51,38 @@ const updateAddress = asyncHandler(async (req, res) => {
   });
 });
 
+const setDefaultAddress = asyncHandler(async (req, res) => {
+  const address = await Address.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!address) {
+    const error = new Error('Address not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  await Address.updateMany({ userId: req.user._id }, { isDefault: false });
+  address.isDefault = true;
+  await address.save();
+
+  return sendSuccess(res, {
+    message: 'Default address updated',
+    data: { address },
+  });
+});
+
 const deleteAddress = asyncHandler(async (req, res) => {
   const address = await Address.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
   if (!address) {
     const error = new Error('Address not found');
     error.statusCode = 404;
     throw error;
+  }
+
+  if (address.isDefault) {
+    const nextDefault = await Address.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
+    if (nextDefault) {
+      nextDefault.isDefault = true;
+      await nextDefault.save();
+    }
   }
 
   return sendSuccess(res, {
@@ -62,5 +95,6 @@ module.exports = {
   listAddresses,
   createAddress,
   updateAddress,
+  setDefaultAddress,
   deleteAddress,
 };

@@ -11,6 +11,18 @@ export const API_PATHS = {
     logout: "/auth/logout",
     me: "/auth/me",
   },
+  users: {
+    me: "/users/me",
+    addresses: "/users/me/addresses",
+    address: (id: string) => `/users/me/addresses/${id}`,
+    addressDefault: (id: string) => `/users/me/addresses/${id}/default`,
+  },
+  orders: {
+    list: "/orders",
+    create: "/orders",
+    detail: (id: string) => `/orders/${id}`,
+    cancel: (id: string) => `/orders/${id}/cancel`,
+  },
   products: {
     list: "/products",
     featured: "/products/featured",
