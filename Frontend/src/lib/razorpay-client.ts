@@ -56,7 +56,7 @@ export function openRazorpay(options: RazorpayOptions) {
   new window.Razorpay(options).open();
 }
 
-export const ORDER_STORAGE_KEY = "gifty.lastOrder.v1";
+export const ORDER_STORAGE_KEY = "dearlys.lastOrder.v1";
 
 export type PlacedOrder = {
   reference: string;

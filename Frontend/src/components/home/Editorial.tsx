@@ -7,7 +7,7 @@ import { Motif } from "@/components/ui/Motif";
 import { Reveal } from "@/components/ui/Reveal";
 import { Stars } from "@/components/ui/Stars";
 import { journalPosts, testimonials, uspStrip } from "@/data/site";
-import { occasions } from "@/data/taxonomy";
+import { useTaxonomy } from "@/components/taxonomy/TaxonomyProvider";
 
 /** Promises as one continuous line, divided by rules rather than boxed. */
 export function UspLine() {
@@ -40,7 +40,11 @@ export function UspLine() {
  * separated by hairlines, with the artwork following the cursor on pointer
  * devices so the section stays a single continuous flow.
  */
+const FALLBACK_OCCASION_IMAGE =
+  "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=900&q=72";
+
 export function OccasionIndex() {
+  const { occasions } = useTaxonomy();
   const [active, setActive] = useState<number | null>(null);
   const [point, setPoint] = useState({ x: 0, y: 0 });
 
@@ -113,7 +117,7 @@ export function OccasionIndex() {
         >
           <div className="relative h-[26vh] w-[18vw] overflow-hidden shadow-lift">
             <Image
-              src={occasions[active].image}
+              src={occasions[active]?.image || FALLBACK_OCCASION_IMAGE}
               alt=""
               fill
               sizes="18vw"

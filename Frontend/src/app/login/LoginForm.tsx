@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { Field } from "@/components/ui/Field";
+import { validateEmail, validateRequired } from "@/lib/validation";
 
 export function LoginForm() {
   const { login, user, loading: authLoading } = useAuth();
@@ -14,11 +16,18 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const found = {
+      email: validateEmail(email) ?? undefined,
+      password: validateRequired("Password")(password) ?? undefined,
+    };
+    setFieldErrors(found);
+    if (found.email || found.password) return;
     setSubmitting(true);
     try {
       const loggedIn = await login(email.trim().toLowerCase(), password);
@@ -47,29 +56,30 @@ export function LoginForm() {
         <p className="mt-1 text-sm text-ink-soft">
           Customers and admins use the same login. Admins are redirected to the portal.
         </p>
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-          <label className="text-sm">
-            <span className="font-medium">Email</span>
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="text-sm">
-            <span className="font-medium">Password</span>
-            <input
-              required
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm"
-            />
-          </label>
+        <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
+          <Field
+            label="Email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            value={email}
+            error={fieldErrors.email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((f) => ({ ...f, email: undefined }));
+            }}
+          />
+          <Field
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            error={fieldErrors.password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password) setFieldErrors((f) => ({ ...f, password: undefined }));
+            }}
+          />
           {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
           <button
             type="submit"

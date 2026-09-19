@@ -6,9 +6,10 @@ import { Carousel } from "@/components/ui/Carousel";
 import { ProductArt } from "@/components/ui/ProductArt";
 import { Reveal } from "@/components/ui/Reveal";
 import { ProductCard } from "@/components/product/ProductCard";
-import { budgetBands, makers, promoBand, recipients } from "@/data/site";
-import { categories } from "@/data/taxonomy";
+import { budgetBands, makers, promoBand as fallbackPromo, recipients } from "@/data/site";
+import { useTaxonomy } from "@/components/taxonomy/TaxonomyProvider";
 import type { Product } from "@/lib/types";
+import type { Banner } from "@/lib/banners";
 import { useParallax } from "@/lib/useParallax";
 import { Motif } from "@/components/ui/Motif";
 
@@ -62,7 +63,13 @@ export function SectionHead({
 }
 
 
+// Keeps the rail at two rows however many categories exist: 2 up to sm,
+// 4 up to lg, 6 beyond. The rest stay behind the "All categories" link.
+const twoRowsOnly = (i: number) =>
+  i < 2 ? "" : i < 4 ? "hidden sm:block" : "hidden lg:block";
+
 export function CategoryRail() {
+  const { categories } = useTaxonomy();
   return (
     <section className="shell py-[7vh]">
       <SectionHead
@@ -73,19 +80,24 @@ export function CategoryRail() {
         linkLabel="All categories"
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {categories.map((c, i) => (
-          <Reveal key={c.id} delay={i * 90} y={5}>
+        {categories.slice(0, 6).map((c, i) => (
+          <Reveal key={c.id} delay={i * 90} y={5} className={twoRowsOnly(i)}>
             <Link
               href={`/products?category=${c.slug}`}
               className="group relative flex h-full min-h-[34vh] flex-col justify-end overflow-hidden border border-line p-6"
             >
-              <Image
-                src={c.image}
-                alt=""
-                fill
-                sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 30vw"
-                className="object-cover saturate-[0.72] transition-transform duration-[1200ms] ease-out-expo group-hover:scale-105"
-              />
+              {/* Categories added through the admin may have no artwork yet. */}
+              {c.image ? (
+                <Image
+                  src={c.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 30vw"
+                  className="object-cover saturate-[0.72] transition-transform duration-[1200ms] ease-out-expo group-hover:scale-105"
+                />
+              ) : (
+                <span className="absolute inset-0 bg-gradient-to-br from-accent-700 to-ink" />
+              )}
               <span className="absolute inset-0 bg-gradient-to-t from-ink/92 via-ink/60 to-accent-700/35 transition-opacity duration-700" />
               <span className="absolute top-5 right-5 text-cream/90">
                 <Motif name={c.motif} className="size-7" />
@@ -185,7 +197,8 @@ export function PersonalisedBanner({ product }: { product: Product }) {
 
 
 /** Full-bleed offer band, linking straight through to the filtered list. */
-export function PromoBand() {
+export function PromoBand({ banner }: { banner?: Banner }) {
+  const promoBand = banner ?? fallbackPromo;
   const { ref, offset } = useParallax<HTMLElement>(0.16);
   return (
     <section

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { adminApi, type AdminCoupon } from "@/lib/api";
+import { decimalOnly, digitsOnly, validateAll, validateAmount, validateInteger, validateRequired } from "@/lib/validation";
 import { DISCOUNT_TYPES, formatInr } from "@/lib/admin-constants";
 
 const defaultForm = {
@@ -26,6 +27,7 @@ export default function AdminCouponsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -90,6 +92,39 @@ export default function AdminCouponsPage() {
     e.preventDefault();
     setError("");
     setMessage("");
+
+    const isPercent = form.discountType === "PERCENTAGE";
+    const found = validateAll(
+      {
+        code: form.code,
+        discountValue: form.discountValue,
+        minimumAmount: form.minimumAmount,
+        maximumDiscount: form.maximumDiscount,
+        usageLimit: form.usageLimit,
+        startDate: form.startDate,
+        expiryDate: form.expiryDate,
+      },
+      {
+        code: validateRequired("Code", 40),
+        discountValue: validateAmount("Discount value", {
+          min: 1,
+          max: isPercent ? 100 : 100000,
+        }),
+        minimumAmount: validateAmount("Minimum amount", { min: 0, required: false }),
+        maximumDiscount: validateAmount("Maximum discount", { min: 0, required: false }),
+        usageLimit: validateInteger("Usage limit", { min: 1, required: false }),
+        startDate: validateRequired("Start date"),
+        expiryDate: validateRequired("Expiry date"),
+      },
+    ) as Record<string, string>;
+    if (form.startDate && form.expiryDate && form.expiryDate <= form.startDate) {
+      found.expiryDate = "Expiry must be after the start date";
+    }
+    setFieldErrors(found);
+    if (Object.keys(found).length) {
+      setError("Fix the highlighted fields");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = buildPayload();
@@ -161,7 +196,7 @@ export default function AdminCouponsPage() {
             min={0}
             placeholder={form.discountType === "PERCENTAGE" ? "Percent off" : "Flat off (INR)"}
             value={form.discountValue}
-            onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+            onChange={(e) => setForm((f) => ({ ...f, discountValue: decimalOnly(e.target.value) }))}
             className="rounded-md border border-line px-3 py-2 text-sm"
           />
           <div className="grid grid-cols-2 gap-3">
@@ -170,7 +205,7 @@ export default function AdminCouponsPage() {
               min={0}
               placeholder="Min cart (INR)"
               value={form.minimumAmount}
-              onChange={(e) => setForm((f) => ({ ...f, minimumAmount: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, minimumAmount: decimalOnly(e.target.value) }))}
               className="rounded-md border border-line px-3 py-2 text-sm"
             />
             <input
@@ -178,7 +213,7 @@ export default function AdminCouponsPage() {
               min={0}
               placeholder="Max discount (INR, optional)"
               value={form.maximumDiscount}
-              onChange={(e) => setForm((f) => ({ ...f, maximumDiscount: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, maximumDiscount: decimalOnly(e.target.value) }))}
               className="rounded-md border border-line px-3 py-2 text-sm"
               disabled={form.discountType === "FLAT"}
             />
@@ -210,10 +245,17 @@ export default function AdminCouponsPage() {
             min={1}
             placeholder="Usage limit (optional)"
             value={form.usageLimit}
-            onChange={(e) => setForm((f) => ({ ...f, usageLimit: e.target.value }))}
+            onChange={(e) => setForm((f) => ({ ...f, usageLimit: digitsOnly(e.target.value) }))}
             className="rounded-md border border-line px-3 py-2 text-sm"
           />
           {message && <p className="text-sm text-accent-700">{message}</p>}
+          {Object.values(fieldErrors).filter(Boolean).length > 0 && (
+            <ul className="grid gap-1 text-xs text-red-700" role="alert">
+              {Object.values(fieldErrors).filter(Boolean).map((m) => (
+                <li key={m}>{m}</li>
+              ))}
+            </ul>
+          )}
           {error && <p className="text-sm text-red-700">{error}</p>}
           <div className="flex gap-2">
             <button

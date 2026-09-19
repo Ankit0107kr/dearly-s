@@ -63,6 +63,8 @@ export const API_PATHS = {
     list: "/categories",
     tree: "/categories/tree",
   },
+  occasions: "/occasions",
+  banners: "/banners",
   admin: {
     dashboard: "/admin/dashboard",
     users: "/admin/users",

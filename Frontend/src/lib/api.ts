@@ -1,5 +1,5 @@
 import { API_PATHS, buildQuery, withQuery, type QueryParams } from "@/lib/api-config";
-import { apiDelete, apiGet, apiPatch, apiPost, serverGet } from "@/lib/api-http";
+import { apiDelete, apiFetch, apiGet, apiPatch, apiPost, serverGet } from "@/lib/api-http";
 import type {
   AddCartItemInput,
   AddressInput,
@@ -98,11 +98,12 @@ export const wishlistApi = {
 
 export const orderApi = {
   /** Builds the order from the server cart and returns a payment intent with it. */
-  create: (body: CreateOrderInput) =>
-    apiPost<{ order: ApiOrder; payment: ApiPaymentIntent }>(
-      API_PATHS.orders.create,
-      json(body),
-    ),
+  create: (body: CreateOrderInput, idempotencyKey?: string) =>
+    apiFetch<{ order: ApiOrder; payment: ApiPaymentIntent }>(API_PATHS.orders.create, {
+      method: "POST",
+      body: json(body),
+      ...(idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : {}),
+    }),
   list: (query: string | { page?: number; limit?: number } = "") =>
     apiGet<Paginated<ApiOrder>>(withQuery(API_PATHS.orders.list, toQuery(query))),
   detail: (id: string) => apiGet<{ order: ApiOrder }>(API_PATHS.orders.detail(id)),
@@ -175,6 +176,9 @@ export const catalogApi = {
 export const catalogServer = {
   products: <T>(query: string) => serverGet<T>(withQuery(API_PATHS.products.list, query)),
   categories: <T>() => serverGet<T>(API_PATHS.categories.tree),
+  occasions: <T>() => serverGet<T>(API_PATHS.occasions),
+  banners: <T>(placement?: string) =>
+    serverGet<T>(withQuery(API_PATHS.banners, buildQuery({ placement }))),
   productBySlug: <T>(slug: string) => serverGet<T>(API_PATHS.products.slug(slug)),
   featured: <T>(limit?: number) =>
     serverGet<T>(withQuery(API_PATHS.products.featured, buildQuery({ limit }))),

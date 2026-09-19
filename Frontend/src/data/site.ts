@@ -1,9 +1,9 @@
 import type { ShippingMethod } from "@/lib/types";
 
 export const brand = {
-  name: "Gifty",
+  name: "Dearly's",
   tagline: "Gifting, but thoughtful.",
-  supportEmail: "hello@gifty.shop",
+  supportEmail: "hello@dearlys.com",
   supportPhone: "+91 80 4718 2200",
   currency: "INR",
   currencySymbol: "₹",
@@ -84,7 +84,7 @@ export const heroSlides = [
     cta: { label: "Shop the drop", href: "/products?occasion=diwali" },
     altCta: { label: "Browse everything", href: "/products" },
     motif: "diya",
-    image: img("1549465220-1a8b9238cd48"),
+    image: img("1607344645866-009c320b63e0"),
     align: "left" as const,
   },
   {
@@ -96,7 +96,7 @@ export const heroSlides = [
     cta: { label: "Make it personal", href: "/products?category=personalised" },
     altCta: { label: "See how it works", href: "/products?category=personalised" },
     motif: "engrave",
-    image: img("1519681393784-d120267933ba"),
+    image: img("1608755728617-aefab37d2edd"),
     align: "center" as const,
   },
   {
@@ -200,7 +200,7 @@ export const journalPosts = [
     excerpt: "Three sentences, one specific memory, no closing cliché. A short field guide.",
     readTime: "4 min",
     motif: "engrave",
-    image: img("1513475382585-d06e58bcb0e0", 900),
+    image: img("1519710164239-da123dc03ef4", 900),
   },
   {
     id: "j2",
@@ -216,7 +216,7 @@ export const journalPosts = [
     excerpt: "What people actually keep from a welcome kit, based on 4,000 orders.",
     readTime: "5 min",
     motif: "work",
-    image: img("1481833761820-0509d3217039", 900),
+    image: img("1470162656305-6f429ba817bf", 900),
   },
 ];
 
@@ -290,7 +290,7 @@ export const freeShippingThreshold = 149900;
 export const taxRate = 0.18;
 
 export const coupons: Record<string, { type: "percent" | "flat"; value: number; label: string }> = {
-  GIFTY10: { type: "percent", value: 10, label: "10% off your order" },
+  DEARLY10: { type: "percent", value: 10, label: "10% off your order" },
   FESTIVE500: { type: "flat", value: 50000, label: "₹500 off" },
   FIRSTGIFT: { type: "percent", value: 15, label: "15% off, first order" },
 };

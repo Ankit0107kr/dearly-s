@@ -7,6 +7,12 @@ const formatter = new Intl.NumberFormat("en-IN", {
 
 export const formatMoney = (paise: number) => formatter.format(paise / 100);
 
+/**
+ * The one exception to the paise rule: the backend stores order, cart and
+ * product amounts as whole rupees, so API values are formatted as-is.
+ */
+export const formatRupees = (rupees: number) => formatter.format(rupees);
+
 export const formatMoneyExact = (paise: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",

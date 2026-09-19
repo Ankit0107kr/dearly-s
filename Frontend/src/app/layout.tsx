@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/lib/auth";
+import { TaxonomyProvider } from "@/components/taxonomy/TaxonomyProvider";
+import { loadTaxonomy } from "@/lib/taxonomy-api";
 import { ApiLoadingBar } from "@/components/ui/ApiLoadingBar";
 import "./globals.css";
 
@@ -12,26 +14,30 @@ const playfair = Playfair_Display({ variable: "--font-display", subsets: ["latin
 
 export const metadata: Metadata = {
   title: {
-    default: "Gifty — Gifting, but thoughtful",
-    template: "%s · Gifty",
+    default: "Dearly's — Gifting, but thoughtful",
+    template: "%s · Dearly's",
   },
   description:
     "Curated gift hampers, personalised keepsakes and small-batch gourmet, hand-packed and delivered across India.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const taxonomy = await loadTaxonomy();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <AuthProvider>
-          <CartProvider>
-            <ApiLoadingBar />
-            <SiteChrome>{children}</SiteChrome>
-          </CartProvider>
-        </AuthProvider>
+        <TaxonomyProvider taxonomy={taxonomy}>
+          <AuthProvider>
+            <CartProvider>
+              <ApiLoadingBar />
+              <SiteChrome>{children}</SiteChrome>
+            </CartProvider>
+          </AuthProvider>
+        </TaxonomyProvider>
       </body>
     </html>
   );

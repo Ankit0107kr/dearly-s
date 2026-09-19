@@ -1,12 +1,5 @@
-/**
- * Wire types for the Dearly's backend, mirroring `Backend/src/models` as the API
- * serialises them: Mongo `_id`s, refs that may or may not be populated, and
- * dates as ISO strings.
- *
- * Amounts here are whole rupees — the backend stores plain `Number`. The local
- * demo catalog in `@/lib/types` uses paise, so `product-catalog.ts` converts
- * when mapping between the two.
- */
+// Wire types for `Backend/src/models` as the API serialises them.
+// Amounts are whole rupees here; `@/lib/types` uses paise.
 
 export type Id = string;
 
@@ -87,10 +80,8 @@ export type ApiCategory = {
   updatedAt?: string;
 };
 
-/**
- * `/categories/tree` nests children under each root. Named distinctly from the
- * looser `ApiCategoryNode` that `@/lib/product-catalog` uses for its mappers.
- */
+// `/categories/tree` nests children under each root. Named distinctly from the
+// looser `ApiCategoryNode` that `@/lib/product-catalog` uses for its mappers.
 export type ApiCategoryTreeNode = ApiCategory & {
   children?: ApiCategoryTreeNode[];
 };
@@ -253,10 +244,8 @@ export type CreateOrderInput = {
   deliverySlot?: string;
 };
 
-/**
- * Discriminated on `providerConfigured`: without Razorpay keys the backend
- * still creates the order and reports the payment as pending.
- */
+// Discriminated on `providerConfigured`: without Razorpay keys the backend
+// still creates the order and reports the payment as pending.
 export type ApiPaymentIntent =
   | {
       providerConfigured: false;

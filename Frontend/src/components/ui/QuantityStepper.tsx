@@ -30,13 +30,16 @@ export function QuantityStepper({
         −
       </button>
       <input
-        type="number"
-        min={1}
-        max={max}
+        type="text"
+        inputMode="numeric"
         value={value}
         onChange={(e) => {
-          const next = Number(e.target.value);
-          if (Number.isFinite(next)) onChange(Math.min(Math.max(1, next), max));
+          // type=number still accepts "e", "+" and "-", so digits are filtered here.
+          const digits = e.target.value.replace(/\D/g, "");
+          onChange(digits ? Math.min(Math.max(1, Number(digits)), max) : 1);
+        }}
+        onBlur={(e) => {
+          if (!e.target.value.replace(/\D/g, "")) onChange(1);
         }}
         className={`${pad} w-[4.5ch] appearance-none border-x border-ink/10 bg-transparent text-center font-semibold [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
         aria-label={label}

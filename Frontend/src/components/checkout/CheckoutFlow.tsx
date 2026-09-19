@@ -14,11 +14,23 @@ import {
   type PlacedOrder,
   type RazorpaySuccess,
 } from "@/lib/razorpay-client";
+import { newIdempotencyKey, placeOrder, toDeliveryType } from "@/lib/checkout";
+import { paymentApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type { Address } from "@/lib/types";
 import { Motif } from "@/components/ui/Motif";
 
 const steps = ["Details", "Delivery", "Payment"] as const;
 type Step = (typeof steps)[number];
+
+const DELIVERY_SLOTS = ["09:00 – 13:00", "13:00 – 17:00", "17:00 – 21:00"] as const;
+
+/** Scheduled delivery needs a date; the backend rejects anything in the past. */
+const earliestDeliveryDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
 
 const emptyAddress: Address = {
   fullName: "",
@@ -54,17 +66,21 @@ function Field({
 export function CheckoutFlow() {
   const router = useRouter();
   const { lines, summary, couponCode, shippingMethodId, setShipping, clear, hydrated } = useCart();
+  const { user, loading: authLoading } = useAuth();
 
   const [step, setStep] = useState<Step>("Details");
   const [address, setAddress] = useState<Address>(emptyAddress);
   const [errors, setErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [paying, setPaying] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliverySlot, setDeliverySlot] = useState<string>(DELIVERY_SLOTS[0]);
 
   const method = useMemo(
     () => shippingMethods.find((s) => s.id === shippingMethodId) ?? shippingMethods[0],
     [shippingMethodId],
   );
+  const requiresSchedule = toDeliveryType(shippingMethodId) === "SCHEDULED";
 
   const set = (key: keyof Address) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddress((a) => ({ ...a, [key]: e.target.value }));
@@ -97,11 +113,12 @@ export function CheckoutFlow() {
     reference: string,
     paymentId: string | null,
     demo: boolean,
+    total: number,
   ): PlacedOrder => ({
     reference,
     paymentId,
     demo,
-    total: summary.total,
+    total,
     email: address.email,
     fullName: address.fullName,
     address: [address.line1, address.line2, address.city, address.state, address.pincode]
@@ -118,31 +135,32 @@ export function CheckoutFlow() {
   });
 
   const pay = async () => {
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent("/checkout")}`);
+      return;
+    }
+
     setPaying(true);
     setPaymentError(null);
 
     try {
-      const response = await fetch("/api/razorpay/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lines: lines.map((l) => ({
-            productId: l.productId,
-            variantId: l.variantId,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-          })),
-          couponCode,
-          shippingMethodId,
-        }),
+      // The server reprices the cart from its own catalogue and returns the
+      // authoritative total; nothing the browser computed is trusted here.
+      const { order, payment } = await placeOrder({
+        lines,
+        address,
+        couponCode,
+        shippingMethodId,
+        ...(requiresSchedule ? { deliveryDate, deliverySlot } : {}),
+        idempotencyKey: newIdempotencyKey(),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not start the payment.");
+      const reference = order.orderNumber ?? order._id;
+      const totalPaise = Math.round(order.totalAmount * 100);
 
-      // Demo mode: no merchant keys yet, so complete the flow without a charge.
-      if (data.demo) {
-        persistOrder(buildOrder(data.orderId, null, true));
+      // No merchant keys yet: the order exists and waits on payment.
+      if (!payment || !payment.providerConfigured) {
+        persistOrder(buildOrder(reference, null, true, totalPaise));
         clear();
         router.push("/checkout/success");
         return;
@@ -152,38 +170,42 @@ export function CheckoutFlow() {
       if (!ready) throw new Error("Could not load the payment gateway. Check your connection.");
 
       openRazorpay({
-        key: data.keyId,
-        amount: data.amount,
-        currency: data.currency,
+        key: payment.keyId,
+        amount: Math.round(payment.amount * 100),
+        currency: payment.currency,
         name: brand.name,
-        description: `${lines.length} item${lines.length === 1 ? "" : "s"}`,
-        order_id: data.orderId,
+        description: `Order ${reference}`,
+        order_id: payment.razorpayOrderId,
         prefill: {
           name: address.fullName,
           email: address.email,
           contact: address.phone,
         },
-        notes: { address: address.line1, pincode: address.pincode },
-        theme: { color: "#dd2360" },
+        notes: { orderNumber: reference },
+        theme: { color: "#7a5ad6" },
         modal: { ondismiss: () => setPaying(false) },
         handler: async (payload: RazorpaySuccess) => {
           try {
-            const verifyResponse = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const verification = await verifyResponse.json();
-            if (!verifyResponse.ok || !verification.verified) {
-              throw new Error(verification.error ?? "We could not verify that payment.");
-            }
-            persistOrder(buildOrder(payload.razorpay_order_id, payload.razorpay_payment_id, false));
+            // Verified server-side: the signature is checked against the key
+            // secret, which never reaches the browser.
+            const verified = await paymentApi.verify(payload);
+            const paidOrder = verified.data?.order;
+            persistOrder(
+              buildOrder(
+                paidOrder?.orderNumber ?? reference,
+                payload.razorpay_payment_id,
+                false,
+                Math.round((paidOrder?.totalAmount ?? order.totalAmount) * 100),
+              ),
+            );
             clear();
             router.push("/checkout/success");
           } catch (error) {
             setPaying(false);
             setPaymentError(
-              error instanceof Error ? error.message : "Payment verification failed.",
+              error instanceof Error
+                ? `${error.message} If you were charged, the payment will be confirmed automatically.`
+                : "Payment verification failed.",
             );
           }
         },
@@ -388,6 +410,40 @@ export function CheckoutFlow() {
                 })}
               </fieldset>
 
+              {/* SCHEDULED orders are rejected without a date and slot. */}
+              {requiresSchedule && (
+                <div className="grid gap-4 rounded-md border border-ink/12 bg-cream p-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className="text-2xs font-bold tracking-[0.12em] text-ink-soft uppercase">
+                      Delivery date
+                    </span>
+                    <input
+                      type="date"
+                      value={deliveryDate}
+                      min={earliestDeliveryDate()}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      className="rounded-md border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-2xs font-bold tracking-[0.12em] text-ink-soft uppercase">
+                      Time slot
+                    </span>
+                    <select
+                      value={deliverySlot}
+                      onChange={(e) => setDeliverySlot(e.target.value)}
+                      className="rounded-md border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink"
+                    >
+                      {DELIVERY_SLOTS.map((slot) => (
+                        <option key={slot} value={slot}>
+                          {slot}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
@@ -399,9 +455,10 @@ export function CheckoutFlow() {
                 <button
                   type="button"
                   onClick={() => setStep("Payment")}
-                  className="rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft"
+                  disabled={requiresSchedule && !deliveryDate}
+                  className="rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft disabled:opacity-60"
                 >
-                  Continue to payment →
+                  {requiresSchedule && !deliveryDate ? "Pick a delivery date" : "Continue to payment →"}
                 </button>
               </div>
             </div>
@@ -488,15 +545,28 @@ export function CheckoutFlow() {
                 <button
                   type="button"
                   onClick={pay}
-                  disabled={paying}
+                  disabled={paying || authLoading}
                   className="flex-1 rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60 sm:flex-none"
                 >
-                  {paying ? "Opening Razorpay…" : `Pay ${formatMoney(summary.total)} securely`}
+                  {paying
+                    ? "Opening Razorpay…"
+                    : user
+                      ? `Pay ${formatMoney(summary.total)} securely`
+                      : "Sign in to pay"}
                 </button>
               </div>
 
+              {/* Orders are created against an account, so say so before the form is filled. */}
+              {!authLoading && !user && (
+                <p className="text-2xs text-ink-soft">
+                  You&rsquo;ll be asked to sign in — your order and its history are saved to your
+                  account.
+                </p>
+              )}
+
               <p className="text-2xs text-ink-faint">
-                256-bit encrypted. By paying you accept our terms and the 14-day returns policy.
+                The final total is confirmed by our server before payment. 256-bit encrypted. By
+                paying you accept our terms and the 14-day returns policy.
               </p>
             </div>
           )}
