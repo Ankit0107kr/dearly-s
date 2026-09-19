@@ -120,7 +120,7 @@ export function ProductCard({ product }: { product: Product }) {
             type="button"
             onClick={(e) => {
               e.preventDefault();
-              add(product.id, 1, product.variants?.[0]?.id);
+              add(product.id, 1, product.variants?.[0]?.id, { product });
               setAdding(true);
               window.setTimeout(() => setAdding(false), 900);
             }}

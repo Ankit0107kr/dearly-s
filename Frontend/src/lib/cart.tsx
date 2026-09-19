@@ -10,9 +10,9 @@ import {
 } from "react";
 import { productById } from "@/data/products";
 import { coupons, freeShippingThreshold, shippingMethods, taxRate } from "@/data/site";
-import type { CartLine, CartLineView, OrderSummary } from "@/lib/types";
+import type { CartLine, CartLineView, OrderSummary, Product } from "@/lib/types";
 
-const STORAGE_KEY = "gifty.cart.v1";
+const STORAGE_KEY = "gifty.cart.v2";
 
 type State = {
   lines: CartLine[];
@@ -49,7 +49,11 @@ function reducer(state: State, action: Action): State {
           ...state,
           lines: state.lines.map((l) =>
             sameLine(l, action.line.productId, action.line.variantId)
-              ? { ...l, quantity: Math.min(l.quantity + action.line.quantity, 99) }
+              ? {
+                  ...l,
+                  quantity: Math.min(l.quantity + action.line.quantity, 99),
+                  product: l.product ?? action.line.product,
+                }
               : l,
           ),
         };
@@ -128,7 +132,10 @@ function loadFromStorage() {
     state = {
       lines: parsed.lines.filter(
         (l): l is CartLine =>
-          Boolean(l) && typeof l.productId === "string" && productById.has(l.productId),
+          Boolean(l) &&
+          typeof l.productId === "string" &&
+          (productById.has(l.productId) ||
+            (typeof l.product?.id === "string" && l.product.id === l.productId)),
       ),
       couponCode: parsed.couponCode ?? null,
       shippingMethodId:
@@ -178,7 +185,7 @@ type CartContextValue = {
     productId: string,
     quantity?: number,
     variantId?: string,
-    options?: { openDrawer?: boolean },
+    options?: { openDrawer?: boolean; product?: Product },
   ) => void;
   setQty: (productId: string, quantity: number, variantId?: string) => void;
   remove: (productId: string, variantId?: string) => void;
@@ -201,7 +208,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const lines = useMemo<CartLineView[]>(
     () =>
       state.lines.flatMap((line) => {
-        const product = productById.get(line.productId);
+        const product = line.product ?? productById.get(line.productId);
         if (!product) return [];
         const variant = product.variants?.find((v) => v.id === line.variantId);
         const unitPrice = product.price + (variant?.priceDelta ?? 0);
@@ -232,9 +239,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       productId: string,
       quantity = 1,
       variantId?: string,
-      options?: { openDrawer?: boolean },
+      options?: { openDrawer?: boolean; product?: Product },
     ) => {
-      dispatch({ type: "add", line: { productId, variantId, quantity } });
+      dispatch({
+        type: "add",
+        line: { productId, variantId, quantity, product: options?.product },
+      });
       setLastAdded(productId);
       // Buy now navigates straight to checkout, so the drawer must stay shut.
       if (options?.openDrawer !== false) setDrawerOpen(true);

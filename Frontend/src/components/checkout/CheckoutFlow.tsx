@@ -130,6 +130,7 @@ export function CheckoutFlow() {
             productId: l.productId,
             variantId: l.variantId,
             quantity: l.quantity,
+            unitPrice: l.unitPrice,
           })),
           couponCode,
           shippingMethodId,

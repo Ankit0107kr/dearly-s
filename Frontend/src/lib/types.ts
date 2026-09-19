@@ -73,6 +73,8 @@ export type CartLine = {
   variantId?: string;
   quantity: number;
   giftNote?: string;
+  /** Persisted when the product is not in the static demo catalog (API / Mongo id). */
+  product?: Product;
 };
 
 export type CartLineView = CartLine & {

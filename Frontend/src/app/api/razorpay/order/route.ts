@@ -3,7 +3,13 @@ import { getRazorpay, isRazorpayLive, razorpayKeyId } from "@/lib/razorpay";
 import { productById } from "@/data/products";
 import { coupons, freeShippingThreshold, shippingMethods, taxRate } from "@/data/site";
 
-type IncomingLine = { productId: string; variantId?: string; quantity: number };
+type IncomingLine = {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+  /** Paise; used when `productId` is not in the static catalog (API products). */
+  unitPrice?: number;
+};
 
 /**
  * The client never sends a price. The amount is recomputed here from the
@@ -12,11 +18,15 @@ type IncomingLine = { productId: string; variantId?: string; quantity: number };
 function priceOrder(lines: IncomingLine[], couponCode?: string, shippingMethodId?: string) {
   let subtotal = 0;
   for (const line of lines) {
-    const product = productById.get(line.productId);
-    if (!product) continue;
     const quantity = Math.max(1, Math.min(Math.trunc(line.quantity), 99));
-    const variant = product.variants?.find((v) => v.id === line.variantId);
-    subtotal += (product.price + (variant?.priceDelta ?? 0)) * quantity;
+    const product = productById.get(line.productId);
+    let unitPrice = line.unitPrice;
+    if (product) {
+      const variant = product.variants?.find((v) => v.id === line.variantId);
+      unitPrice = product.price + (variant?.priceDelta ?? 0);
+    }
+    if (unitPrice == null || unitPrice < 0) continue;
+    subtotal += unitPrice * quantity;
   }
 
   const coupon = couponCode ? coupons[couponCode.toUpperCase()] : undefined;
