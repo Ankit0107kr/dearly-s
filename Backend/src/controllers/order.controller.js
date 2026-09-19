@@ -44,6 +44,21 @@ const adminListOrders = asyncHandler(async (req, res) => {
   const filter = {};
   if (req.query.orderStatus) filter.orderStatus = req.query.orderStatus;
   if (req.query.paymentStatus) filter.paymentStatus = req.query.paymentStatus;
+  if (req.query.fromDate || req.query.toDate) {
+    filter.createdAt = {};
+    if (req.query.fromDate) {
+      const from = new Date(req.query.fromDate);
+      if (!Number.isNaN(from.getTime())) filter.createdAt.$gte = from;
+    }
+    if (req.query.toDate) {
+      const to = new Date(req.query.toDate);
+      if (!Number.isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = to;
+      }
+    }
+    if (!Object.keys(filter.createdAt).length) delete filter.createdAt;
+  }
 
   const [items, total] = await Promise.all([
     Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('userId', 'firstName lastName email'),

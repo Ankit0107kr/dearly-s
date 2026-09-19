@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
-import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
-import { CartDrawer } from "@/components/layout/CartDrawer";
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
+import { SiteChrome } from "@/components/layout/SiteChrome";
 import { CartProvider } from "@/lib/cart";
+import { AuthProvider } from "@/lib/auth";
 import { ApiLoadingBar } from "@/components/ui/ApiLoadingBar";
 import "./globals.css";
 
@@ -28,14 +26,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <CartProvider>
-          <ApiLoadingBar />
-          <AnnouncementBar />
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <CartDrawer />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <ApiLoadingBar />
+            <SiteChrome>{children}</SiteChrome>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

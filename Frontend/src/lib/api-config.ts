@@ -32,9 +32,14 @@ export const API_PATHS = {
     tree: "/categories/tree",
   },
   admin: {
+    dashboard: "/admin/dashboard",
+    orders: "/admin/orders",
+    orderStatus: (id: string) => `/admin/orders/${id}/status`,
     categories: "/admin/categories",
     products: "/admin/products",
     product: (id: string) => `/admin/products/${id}`,
+    coupons: "/admin/coupons",
+    coupon: (id: string) => `/admin/coupons/${id}`,
   },
 } as const;
 

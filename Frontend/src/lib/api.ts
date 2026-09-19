@@ -75,7 +75,53 @@ export type AdminCategory = {
   parentCategory?: { _id: string; name: string; slug: string } | string | null;
 };
 
+export type AdminCoupon = {
+  _id: string;
+  code: string;
+  discountType: "PERCENTAGE" | "FLAT";
+  discountValue: number;
+  minimumAmount?: number;
+  maximumDiscount?: number;
+  startDate: string;
+  expiryDate: string;
+  usageLimit?: number;
+  usedCount?: number;
+  isActive: boolean;
+};
+
+export type AdminOrder = {
+  _id: string;
+  orderStatus: string;
+  paymentStatus: string;
+  totalAmount: number;
+  createdAt: string;
+  couponCode?: string;
+  userId?: { firstName?: string; lastName?: string; email?: string };
+  shippingAddress?: { fullName?: string; city?: string };
+};
+
 export const adminApi = {
+  dashboard: () =>
+    apiGet<{
+      stats: {
+        customers: number;
+        activeProducts: number;
+        totalOrders: number;
+        revenue: number;
+        pendingReviews: number;
+        ordersByStatus: { _id: string; count: number }[];
+      };
+      recentOrders: AdminOrder[];
+    }>(API_PATHS.admin.dashboard),
+  orders: (query = "") =>
+    apiGet<{ items: AdminOrder[]; pagination?: { page: number; totalPages: number; total: number } }>(
+      withQuery(API_PATHS.admin.orders, query),
+    ),
+  updateOrderStatus: (id: string, orderStatus: string) =>
+    apiPatch<{ order: AdminOrder }>(
+      API_PATHS.admin.orderStatus(id),
+      JSON.stringify({ orderStatus }),
+    ),
   categories: () =>
     apiGet<{ categories: AdminCategory[] }>(API_PATHS.admin.categories),
   products: (query = "") =>
@@ -85,4 +131,10 @@ export const adminApi = {
   createProduct: (formData: FormData) =>
     apiPost<{ product: unknown }>(API_PATHS.admin.products, formData),
   deleteProduct: (id: string) => apiDelete(API_PATHS.admin.product(id)),
+  coupons: () => apiGet<{ coupons: AdminCoupon[] }>(API_PATHS.admin.coupons),
+  createCoupon: (body: Record<string, unknown>) =>
+    apiPost<{ coupon: AdminCoupon }>(API_PATHS.admin.coupons, JSON.stringify(body)),
+  updateCoupon: (id: string, body: Record<string, unknown>) =>
+    apiPatch<{ coupon: AdminCoupon }>(API_PATHS.admin.coupon(id), JSON.stringify(body)),
+  deleteCoupon: (id: string) => apiDelete<{ coupon: AdminCoupon }>(API_PATHS.admin.coupon(id)),
 };
