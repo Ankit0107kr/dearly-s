@@ -24,3 +24,16 @@ export const discountPercent = (price: number, compareAt?: number) =>
   compareAt && compareAt > price
     ? Math.round(((compareAt - price) / compareAt) * 100)
     : 0;
+
+/**
+ * Exact rupees, paise included. Tax makes order totals land on fractions, so a
+ * confirmation or invoice must show what is actually charged, not a rounded
+ * figure the customer can compare against their bank statement and disagree with.
+ */
+export const formatRupeesExact = (rupees: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(rupees);

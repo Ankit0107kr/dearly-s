@@ -223,6 +223,8 @@ export type ApiOrder = {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  /** 18% of the discounted goods value; absent on orders placed before it existed. */
+  tax?: number;
   totalAmount: number;
   couponId?: Id;
   couponCode?: string;
@@ -231,6 +233,8 @@ export type ApiOrder = {
   deliveryType?: DeliveryType;
   deliveryDate?: string;
   deliverySlot?: string;
+  statusHistory?: { status: OrderStatus; at: string; by?: Id; note?: string }[];
+  reservationExpiresAt?: string;
   createdAt?: string;
   updatedAt?: string;
 };

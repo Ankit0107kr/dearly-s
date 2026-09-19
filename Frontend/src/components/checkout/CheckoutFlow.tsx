@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OrderSummaryCard } from "@/components/checkout/OrderSummaryCard";
 import { brand, shippingMethods } from "@/data/site";
 import { useCart } from "@/lib/cart";
@@ -10,14 +10,24 @@ import { formatMoney } from "@/lib/money";
 import {
   loadRazorpayScript,
   openRazorpay,
-  ORDER_STORAGE_KEY,
-  type PlacedOrder,
   type RazorpaySuccess,
 } from "@/lib/razorpay-client";
 import { newIdempotencyKey, placeOrder, toDeliveryType } from "@/lib/checkout";
 import { paymentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Address } from "@/lib/types";
+import { lookupPincode } from "@/lib/pincode";
+import {
+  digitsOnly,
+  lettersOnly,
+  validateAll,
+  validateEmail,
+  validateName,
+  validatePhone,
+  validatePincode,
+  validateRequired,
+  type Validator,
+} from "@/lib/validation";
 import { Motif } from "@/components/ui/Motif";
 
 const steps = ["Details", "Delivery", "Payment"] as const;
@@ -63,6 +73,16 @@ function Field({
   );
 }
 
+const DETAIL_RULES: Record<string, Validator> = {
+  fullName: validateName("Full name"),
+  email: validateEmail,
+  phone: validatePhone(),
+  line1: validateRequired("Street address"),
+  city: validateRequired("City"),
+  state: validateRequired("State"),
+  pincode: validatePincode,
+};
+
 export function CheckoutFlow() {
   const router = useRouter();
   const { lines, summary, couponCode, shippingMethodId, setShipping, clear, hydrated } = useCart();
@@ -72,6 +92,9 @@ export function CheckoutFlow() {
   const [address, setAddress] = useState<Address>(emptyAddress);
   const [errors, setErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [paying, setPaying] = useState(false);
+  const pinAbort = useRef<AbortController | null>(null);
+
+  useEffect(() => () => pinAbort.current?.abort(), []);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliverySlot, setDeliverySlot] = useState<string>(DELIVERY_SLOTS[0]);
@@ -83,56 +106,43 @@ export function CheckoutFlow() {
   const requiresSchedule = toDeliveryType(shippingMethodId) === "SCHEDULED";
 
   const set = (key: keyof Address) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddress((a) => ({ ...a, [key]: e.target.value }));
+    const raw = e.target.value;
+    const value =
+      key === "fullName" ? lettersOnly(raw)
+      : key === "phone" ? digitsOnly(raw, 10)
+      : raw;
+    setAddress((a) => ({ ...a, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  // Six digits is the whole pincode, so the lookup fires without a button.
+  const onPincode = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = digitsOnly(e.target.value, 6);
+    setAddress((a) => ({ ...a, pincode: value }));
+    setErrors((prev) => ({ ...prev, pincode: undefined }));
+    pinAbort.current?.abort();
+    if (value.length !== 6) return;
+    const ctrl = new AbortController();
+    pinAbort.current = ctrl;
+    lookupPincode(value, ctrl.signal)
+      .then((hit) => {
+        if (!hit || ctrl.signal.aborted) return;
+        setAddress((a) => ({ ...a, city: hit.city, state: hit.state }));
+        setErrors((prev) => ({ ...prev, city: undefined, state: undefined }));
+      })
+      .catch(() => {
+        /* third-party lookup — the customer can still type city and state */
+      });
+  };
+
   const validateDetails = () => {
-    const next: Partial<Record<keyof Address, string>> = {};
-    if (address.fullName.trim().length < 2) next.fullName = "Tell us who this is from.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.email)) next.email = "Enter a valid email.";
-    if (!/^[6-9]\d{9}$/.test(address.phone.replace(/\s/g, "")))
-      next.phone = "Enter a 10-digit Indian mobile number.";
-    if (address.line1.trim().length < 4) next.line1 = "Street address is required.";
-    if (address.city.trim().length < 2) next.city = "City is required.";
-    if (address.state.trim().length < 2) next.state = "State is required.";
-    if (!/^\d{6}$/.test(address.pincode.trim())) next.pincode = "Enter a 6-digit PIN code.";
-    setErrors(next);
+    const next = validateAll(address as unknown as Record<string, string>, DETAIL_RULES);
+    setErrors(next as Partial<Record<keyof Address, string>>);
     return Object.keys(next).length === 0;
   };
 
-  const persistOrder = (order: PlacedOrder) => {
-    try {
-      window.sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(order));
-    } catch {
-      /* session storage unavailable — the success page falls back to a generic note */
-    }
-  };
-
-  const buildOrder = (
-    reference: string,
-    paymentId: string | null,
-    demo: boolean,
-    total: number,
-  ): PlacedOrder => ({
-    reference,
-    paymentId,
-    demo,
-    total,
-    email: address.email,
-    fullName: address.fullName,
-    address: [address.line1, address.line2, address.city, address.state, address.pincode]
-      .filter(Boolean)
-      .join(", "),
-    shippingLabel: method.name,
-    eta: method.eta,
-    items: lines.map((l) => ({
-      name: l.variant ? `${l.product.name} — ${l.variant.label}` : l.product.name,
-      quantity: l.quantity,
-      total: l.lineTotal,
-    })),
-    placedAt: new Date().toISOString(),
-  });
+  const detailsComplete =
+    Object.keys(validateAll(address as unknown as Record<string, string>, DETAIL_RULES)).length === 0;
 
   const pay = async () => {
     if (!user) {
@@ -156,13 +166,11 @@ export function CheckoutFlow() {
       });
 
       const reference = order.orderNumber ?? order._id;
-      const totalPaise = Math.round(order.totalAmount * 100);
 
       // No merchant keys yet: the order exists and waits on payment.
       if (!payment || !payment.providerConfigured) {
-        persistOrder(buildOrder(reference, null, true, totalPaise));
         clear();
-        router.push("/checkout/success");
+        router.push(`/checkout/success?order=${order._id}`);
         return;
       }
 
@@ -188,18 +196,9 @@ export function CheckoutFlow() {
           try {
             // Verified server-side: the signature is checked against the key
             // secret, which never reaches the browser.
-            const verified = await paymentApi.verify(payload);
-            const paidOrder = verified.data?.order;
-            persistOrder(
-              buildOrder(
-                paidOrder?.orderNumber ?? reference,
-                payload.razorpay_payment_id,
-                false,
-                Math.round((paidOrder?.totalAmount ?? order.totalAmount) * 100),
-              ),
-            );
+            await paymentApi.verify(payload);
             clear();
-            router.push("/checkout/success");
+            router.push(`/checkout/success?order=${order._id}`);
           } catch (error) {
             setPaying(false);
             setPaymentError(
@@ -317,7 +316,7 @@ export function CheckoutFlow() {
                   label="PIN code"
                   inputMode="numeric"
                   value={address.pincode}
-                  onChange={set("pincode")}
+                  onChange={onPincode}
                   error={errors.pincode}
                   autoComplete="postal-code"
                   placeholder="560001"
@@ -359,7 +358,10 @@ export function CheckoutFlow() {
 
               <button
                 type="submit"
-                className="mt-2 w-full rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft sm:w-fit"
+                disabled={!detailsComplete}
+                aria-disabled={!detailsComplete}
+                title={detailsComplete ? undefined : "Fill in every field above to continue"}
+                className="mt-2 w-full rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:gradient-accent sm:w-fit"
               >
                 Continue to delivery →
               </button>
