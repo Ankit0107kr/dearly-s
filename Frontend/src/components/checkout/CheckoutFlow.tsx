@@ -12,8 +12,13 @@ import {
   openRazorpay,
   type RazorpaySuccess,
 } from "@/lib/razorpay-client";
-import { newIdempotencyKey, placeOrder, toDeliveryType } from "@/lib/checkout";
-import { paymentApi } from "@/lib/api";
+import {
+  checkoutAddressFromSaved,
+  newIdempotencyKey,
+  placeOrder,
+  toDeliveryType,
+} from "@/lib/checkout";
+import { paymentApi, userApi, type ApiAddress } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Address } from "@/lib/types";
 import { lookupPincode } from "@/lib/pincode";
@@ -90,9 +95,49 @@ export function CheckoutFlow() {
 
   const [step, setStep] = useState<Step>("Details");
   const [address, setAddress] = useState<Address>(emptyAddress);
+  const [savedAddresses, setSavedAddresses] = useState<ApiAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
   const [errors, setErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [paying, setPaying] = useState(false);
   const pinAbort = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    userApi
+      .addresses()
+      .then((res) => {
+        if (cancelled) return;
+        const list = res.data?.addresses ?? [];
+        setSavedAddresses(list);
+        const chosen = list.find((a) => a.isDefault) ?? list[0];
+        if (chosen) {
+          setSelectedAddressId(chosen._id);
+          setAddress(checkoutAddressFromSaved(chosen, user.email));
+        } else {
+          setSelectedAddressId("new");
+          setAddress({
+            ...emptyAddress,
+            fullName: [user.firstName, user.lastName].filter(Boolean).join(" "),
+            email: user.email,
+            phone: user.phone ?? "",
+          });
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSelectedAddressId("new");
+        setAddress((a) => ({
+          ...a,
+          fullName: a.fullName || [user.firstName, user.lastName].filter(Boolean).join(" "),
+          email: a.email || user.email,
+          phone: a.phone || user.phone || "",
+        }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => () => pinAbort.current?.abort(), []);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -135,14 +180,39 @@ export function CheckoutFlow() {
       });
   };
 
+  const usingSaved = selectedAddressId !== "new";
+
+  const pickSaved = (saved: ApiAddress) => {
+    setSelectedAddressId(saved._id);
+    setAddress(checkoutAddressFromSaved(saved, user?.email ?? address.email));
+    setErrors({});
+  };
+
+  const startNewAddress = () => {
+    setSelectedAddressId("new");
+    setAddress({
+      ...emptyAddress,
+      fullName: user ? [user.firstName, user.lastName].filter(Boolean).join(" ") : "",
+      email: user?.email ?? "",
+      phone: user?.phone ?? "",
+    });
+    setErrors({});
+  };
+
   const validateDetails = () => {
-    const next = validateAll(address as unknown as Record<string, string>, DETAIL_RULES);
+    const rules = usingSaved ? { email: validateEmail } : DETAIL_RULES;
+    const next = validateAll(address as unknown as Record<string, string>, rules);
     setErrors(next as Partial<Record<keyof Address, string>>);
     return Object.keys(next).length === 0;
   };
 
   const detailsComplete =
-    Object.keys(validateAll(address as unknown as Record<string, string>, DETAIL_RULES)).length === 0;
+    Object.keys(
+      validateAll(
+        address as unknown as Record<string, string>,
+        usingSaved ? { email: validateEmail } : DETAIL_RULES,
+      ),
+    ).length === 0;
 
   const pay = async () => {
     if (!user) {
@@ -159,6 +229,7 @@ export function CheckoutFlow() {
       const { order, payment } = await placeOrder({
         lines,
         address,
+        ...(usingSaved ? { addressId: selectedAddressId } : {}),
         couponCode,
         shippingMethodId,
         ...(requiresSchedule ? { deliveryDate, deliverySlot } : {}),
@@ -281,19 +352,78 @@ export function CheckoutFlow() {
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">Where is it going?</h2>
                 <p className="mt-1 text-sm text-ink-soft">
-                  We will send tracking to this email and text the courier updates.
+                  {savedAddresses.length
+                    ? "Your default address is selected. Pick another, or add a new one."
+                    : "We will send tracking to this email and text the courier updates."}
                 </p>
               </div>
 
+              {savedAddresses.length > 0 && (
+                <fieldset className="flex flex-col gap-3">
+                  <legend className="sr-only">Saved addresses</legend>
+                  {savedAddresses.map((saved) => {
+                    const active = selectedAddressId === saved._id;
+                    return (
+                      <label
+                        key={saved._id}
+                        className={`flex cursor-pointer gap-4 rounded-md border p-5 transition ${
+                          active ? "border-ink bg-cream" : "border-ink/12 hover:border-ink/30"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="checkout-address"
+                          checked={active}
+                          onChange={() => pickSaved(saved)}
+                          className="mt-1 size-4 accent-[var(--color-accent-600)]"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-bold">{saved.fullName}</span>
+                            {saved.isDefault && (
+                              <span className="rounded-xs bg-accent-600 px-2 py-0.5 text-2xs font-bold text-cream">
+                                Default
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-1 block text-xs text-ink-soft">
+                            {saved.addressLine1}
+                            {saved.addressLine2 ? `, ${saved.addressLine2}` : ""}
+                            {saved.landmark ? `, ${saved.landmark}` : ""}
+                            <br />
+                            {saved.city}, {saved.state} {saved.postalCode}
+                            <br />
+                            {saved.phone}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={startNewAddress}
+                    className={`rounded-md border border-dashed px-5 py-4 text-left text-sm font-bold transition ${
+                      selectedAddressId === "new"
+                        ? "border-ink bg-cream"
+                        : "border-ink/20 text-ink-soft hover:border-ink/40 hover:text-ink"
+                    }`}
+                  >
+                    + Add a new address
+                  </button>
+                </fieldset>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Full name"
-                  value={address.fullName}
-                  onChange={set("fullName")}
-                  error={errors.fullName}
-                  autoComplete="name"
-                  placeholder="Ankit Kumar"
-                />
+                {(!usingSaved || savedAddresses.length === 0) && (
+                  <Field
+                    label="Full name"
+                    value={address.fullName}
+                    onChange={set("fullName")}
+                    error={errors.fullName}
+                    autoComplete="name"
+                    placeholder="Ankit Kumar"
+                  />
+                )}
                 <Field
                   label="Email"
                   type="email"
@@ -302,58 +432,63 @@ export function CheckoutFlow() {
                   error={errors.email}
                   autoComplete="email"
                   placeholder="you@example.com"
+                  className={usingSaved ? "sm:col-span-2" : undefined}
                 />
-                <Field
-                  label="Mobile"
-                  type="tel"
-                  value={address.phone}
-                  onChange={set("phone")}
-                  error={errors.phone}
-                  autoComplete="tel"
-                  placeholder="98765 43210"
-                />
-                <Field
-                  label="PIN code"
-                  inputMode="numeric"
-                  value={address.pincode}
-                  onChange={onPincode}
-                  error={errors.pincode}
-                  autoComplete="postal-code"
-                  placeholder="560001"
-                />
-                <Field
-                  label="Address line 1"
-                  className="sm:col-span-2"
-                  value={address.line1}
-                  onChange={set("line1")}
-                  error={errors.line1}
-                  autoComplete="address-line1"
-                  placeholder="Flat 402, Aralia Apartments"
-                />
-                <Field
-                  label="Address line 2 (optional)"
-                  className="sm:col-span-2"
-                  value={address.line2}
-                  onChange={set("line2")}
-                  autoComplete="address-line2"
-                  placeholder="Off 12th Main, Indiranagar"
-                />
-                <Field
-                  label="City"
-                  value={address.city}
-                  onChange={set("city")}
-                  error={errors.city}
-                  autoComplete="address-level2"
-                  placeholder="Bengaluru"
-                />
-                <Field
-                  label="State"
-                  value={address.state}
-                  onChange={set("state")}
-                  error={errors.state}
-                  autoComplete="address-level1"
-                  placeholder="Karnataka"
-                />
+                {!usingSaved && (
+                  <>
+                    <Field
+                      label="Mobile"
+                      type="tel"
+                      value={address.phone}
+                      onChange={set("phone")}
+                      error={errors.phone}
+                      autoComplete="tel"
+                      placeholder="98765 43210"
+                    />
+                    <Field
+                      label="PIN code"
+                      inputMode="numeric"
+                      value={address.pincode}
+                      onChange={onPincode}
+                      error={errors.pincode}
+                      autoComplete="postal-code"
+                      placeholder="560001"
+                    />
+                    <Field
+                      label="Address line 1"
+                      className="sm:col-span-2"
+                      value={address.line1}
+                      onChange={set("line1")}
+                      error={errors.line1}
+                      autoComplete="address-line1"
+                      placeholder="Flat 402, Aralia Apartments"
+                    />
+                    <Field
+                      label="Address line 2 (optional)"
+                      className="sm:col-span-2"
+                      value={address.line2}
+                      onChange={set("line2")}
+                      autoComplete="address-line2"
+                      placeholder="Off 12th Main, Indiranagar"
+                    />
+                    <Field
+                      label="City"
+                      value={address.city}
+                      onChange={set("city")}
+                      error={errors.city}
+                      autoComplete="address-level2"
+                      placeholder="Bengaluru"
+                    />
+                    <Field
+                      label="State"
+                      value={address.state}
+                      onChange={set("state")}
+                      error={errors.state}
+                      autoComplete="address-level1"
+                      placeholder="Karnataka"
+                    />
+                  </>
+                )}
               </div>
 
               <button
