@@ -232,8 +232,11 @@ optional `startsAt`/`endsAt` window; the public route only returns those current
 Set in `Frontend/.env`:
 
 ```env
-BACKEND_BASE_URL=http://localhost:5001/api/v1
+BACKEND_BASE_URL=http://localhost:5001
 ```
+
+On Vercel (or similar), set the same `BACKEND_BASE_URL` on the **Frontend** project so
+`/api/v1/*` rewrites to your live API. The browser uses same-origin `/api/v1` by default.
 
 Use `Frontend/src/lib/api.ts` (`authApi`, `userApi`, `orderApi`, `catalogApi`, etc.) with cookies via `credentials: 'include'`.
 

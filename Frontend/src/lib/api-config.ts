@@ -1,7 +1,37 @@
-/** Backend REST base (includes `/api/v1`). Override with `BACKEND_BASE_URL`. */
-export const API_BASE_URL = (
-  process.env.BACKEND_BASE_URL + "/api/v1"
-).trim();
+function stripTrailingSlash(value: string) {
+  return value.replace(/\/+$/, "");
+}
+
+/** Normalises env to `…/api/v1` (avoids double `/api/v1` if env already includes it). */
+export function toApiV1Base(base: string) {
+  const trimmed = stripTrailingSlash(base.trim());
+  if (trimmed.endsWith("/api/v1")) return trimmed;
+  return `${trimmed}/api/v1`;
+}
+
+/**
+ * API base for fetch calls.
+ * - Browser: `NEXT_PUBLIC_*` if set, else same-origin `/api/v1` (proxied in `next.config.ts`).
+ * - Server: `BACKEND_BASE_URL` or localhost.
+ */
+function resolveApiBaseUrl(): string {
+  const publicUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (publicUrl) return toApiV1Base(publicUrl);
+
+  const publicBackend = process.env.NEXT_PUBLIC_BACKEND_BASE_URL?.trim();
+  if (publicBackend) return toApiV1Base(publicBackend);
+
+  if (typeof window !== "undefined") {
+    return "/api/v1";
+  }
+
+  const serverBackend = process.env.BACKEND_BASE_URL?.trim();
+  if (serverBackend) return toApiV1Base(serverBackend);
+
+  return "http://localhost:5001/api/v1";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 /** Relative paths under `API_BASE_URL`. One entry per route in `Backend/src/routes`. */
 export const API_PATHS = {
