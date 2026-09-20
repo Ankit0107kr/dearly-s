@@ -35,12 +35,18 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+const healthPayload = () => ({
+  success: true,
+  message: 'Server is healthy',
+  data: { uptime: process.uptime() },
+});
+
+app.get('/', (req, res) => {
+  res.status(200).json(healthPayload());
+});
+
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is healthy',
-    data: { uptime: process.uptime() },
-  });
+  res.status(200).json(healthPayload());
 });
 
 app.use('/api/v1', apiLimiter, apiRoutes);
