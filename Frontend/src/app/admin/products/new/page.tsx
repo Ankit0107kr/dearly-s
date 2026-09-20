@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { adminApi, type AdminCategory } from "@/lib/api";
+import { LIMITS, decimalOnly, digitsOnly, validateAll, validateAmount, validateInteger, validateRequired } from "@/lib/validation";
 import { Button } from "@/components/ui/Button";
 
 function parentId(category: AdminCategory): string | null {
@@ -25,6 +26,7 @@ export default function AdminNewProductPage() {
   const [images, setImages] = useState<FileList | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,6 +62,24 @@ export default function AdminNewProductPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const found = validateAll(
+      { name, price, discountPrice, stock },
+      {
+        name: validateRequired("Name", 160),
+        price: validateAmount("Price", { min: 1 }),
+        discountPrice: validateAmount("Discount price", { min: 0, required: false }),
+        stock: validateInteger("Stock", { min: 0, max: LIMITS.stockMax }),
+      },
+    ) as Record<string, string>;
+    if (discountPrice && Number(discountPrice) >= Number(price)) {
+      found.discountPrice = "Discount price must be below the price";
+    }
+    setFieldErrors(found);
+    if (Object.keys(found).length) {
+      setError("Fix the highlighted fields");
+      return;
+    }
     setError(null);
     setSuccess(null);
 
@@ -118,7 +138,14 @@ export default function AdminNewProductPage() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6 rounded-xs border border-ink/10 bg-white/80 p-6 shadow-soft">
-        {error && (
+        {Object.values(fieldErrors).filter(Boolean).length > 0 && (
+            <ul className="grid gap-1 text-xs text-red-700" role="alert">
+              {Object.values(fieldErrors).filter(Boolean).map((m) => (
+                <li key={m}>{m}</li>
+              ))}
+            </ul>
+          )}
+          {error && (
           <p className="rounded-xs bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
             {error}
           </p>
@@ -200,7 +227,7 @@ export default function AdminNewProductPage() {
               min="0"
               step="0.01"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => setPrice(decimalOnly(e.target.value))}
               className="mt-1 w-full rounded-xs border border-ink/15 bg-white px-3 py-2 text-sm"
             />
           </label>
@@ -211,7 +238,7 @@ export default function AdminNewProductPage() {
               min="0"
               step="0.01"
               value={discountPrice}
-              onChange={(e) => setDiscountPrice(e.target.value)}
+              onChange={(e) => setDiscountPrice(decimalOnly(e.target.value))}
               className="mt-1 w-full rounded-xs border border-ink/15 bg-white px-3 py-2 text-sm"
             />
           </label>
@@ -221,7 +248,7 @@ export default function AdminNewProductPage() {
               type="number"
               min="0"
               value={stock}
-              onChange={(e) => setStock(e.target.value)}
+              onChange={(e) => setStock(digitsOnly(e.target.value))}
               className="mt-1 w-full rounded-xs border border-ink/15 bg-white px-3 py-2 text-sm"
             />
           </label>

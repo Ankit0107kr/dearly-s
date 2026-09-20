@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
-import { categories, occasions, subcategoriesFor } from "@/data/taxonomy";
+import { useTaxonomy } from "@/components/taxonomy/TaxonomyProvider";
 import { priceBands } from "@/lib/catalog";
 import { X } from "lucide-react";
 import { Motif } from "@/components/ui/Motif";
@@ -74,6 +74,7 @@ function FacetShell({
 }
 
 export function Filters({ onDone }: { onDone?: () => void }) {
+  const { categories, occasions, subcategoriesFor } = useTaxonomy();
   const { params, apply } = useFacetUrl();
   const activeCategory = params.get("category");
   const activeSub = params.get("subcategory");
@@ -298,6 +299,7 @@ export function SortSelect() {
 }
 
 export function ActiveChips() {
+  const { categories, occasions } = useTaxonomy();
   const { params, apply } = useFacetUrl();
   const chips: { key: string; label: string }[] = [];
   const category = params.get("category");

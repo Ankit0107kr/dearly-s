@@ -1,12 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProductArt } from "@/components/ui/ProductArt";
 import { QuantityStepper } from "@/components/ui/QuantityStepper";
 import { Stars } from "@/components/ui/Stars";
-import { categoryById, occasionById, subcategoryById } from "@/data/taxonomy";
+import { useTaxonomy } from "@/components/taxonomy/TaxonomyProvider";
 import { useCart } from "@/lib/cart";
 import { discountPercent, formatMoney } from "@/lib/money";
 import type { Product } from "@/lib/types";
@@ -15,6 +16,7 @@ import { Motif } from "@/components/ui/Motif";
 const tabs = ["Description", "What's inside", "Specs", "Delivery"] as const;
 
 export function ProductDetail({ product }: { product: Product }) {
+  const { categoryById, subcategoryById, occasionById } = useTaxonomy();
   const router = useRouter();
   const { add } = useCart();
   const [variantId, setVariantId] = useState(product.variants?.[0]?.id);
@@ -39,14 +41,18 @@ export function ProductDetail({ product }: { product: Product }) {
     { ...product.art, motif: "ribbon", pattern: "confetti" as const },
   ];
 
+  const photos = product.images ?? [];
+  const slideCount = photos.length || views.length;
+  const active = Math.min(view, slideCount - 1);
+
   const handleAdd = () => {
-    add(product.id, quantity, variantId);
+    add(product.id, quantity, variantId, { product });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1200);
   };
 
   const handleBuyNow = () => {
-    add(product.id, quantity, variantId, { openDrawer: false });
+    add(product.id, quantity, variantId, { openDrawer: false, product });
     router.push("/checkout");
   };
 
@@ -56,10 +62,23 @@ export function ProductDetail({ product }: { product: Product }) {
         {/* gallery */}
         <div className="lg:sticky lg:top-[12vh] lg:self-start">
           <div className="relative overflow-hidden rounded-xl border border-line">
-            <ProductArt
-              art={views[view]}
-              className="aspect-square w-full transition-all duration-500"
-              motifClass="size-[20vh]"/>
+            {photos.length ? (
+              <Image
+                src={photos[active]}
+                alt={product.name}
+                width={1200}
+                height={1200}
+                priority
+                sizes="(max-width: 1024px) 100vw, 52vw"
+                className="aspect-square w-full object-cover transition-all duration-500"
+              />
+            ) : (
+              <ProductArt
+                art={views[active]}
+                className="aspect-square w-full transition-all duration-500"
+                motifClass="size-[20vh]"
+              />
+            )}
             {off > 0 && (
               <span className="absolute top-5 left-5 rounded-xs bg-ink px-4 py-2 text-2xs font-bold text-white">
                 −{off}% today
@@ -72,22 +91,39 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {views.map((v, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setView(i)}
-                aria-label={`View ${i + 1}`}
-                aria-current={view === i}
-                className={`overflow-hidden rounded-md border-2 transition ${
-                  view === i ? "border-ink" : "border-transparent opacity-70 hover:opacity-100"
-                }`}
-              >
-                <ProductArt art={v} className="aspect-square w-full" motifClass="size-[5vh]" />
-              </button>
-            ))}
-          </div>
+          {/* A single photo needs no picker. */}
+          {slideCount > 1 && (
+            <div className="mt-3 grid grid-cols-4 gap-3">
+              {(photos.length ? photos : views).map((v, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setView(i)}
+                  aria-label={`View ${i + 1}`}
+                  aria-current={active === i}
+                  className={`overflow-hidden rounded-md border-2 transition ${
+                    active === i ? "border-ink" : "border-transparent opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  {photos.length ? (
+                    <Image
+                      src={v as string}
+                      alt=""
+                      width={240}
+                      height={240}
+                      className="aspect-square w-full object-cover"
+                    />
+                  ) : (
+                    <ProductArt
+                      art={v as (typeof views)[number]}
+                      className="aspect-square w-full"
+                      motifClass="size-[5vh]"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* buy box */}

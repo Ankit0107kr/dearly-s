@@ -1,11 +1,14 @@
 const orderService = require('../services/order.service');
 const { asyncHandler } = require('../utils/helpers');
 const { sendSuccess } = require('../utils/response');
-const { ORDER_STATUS } = require('../utils/constants');
 const Order = require('../models/Order');
 
 const createOrder = asyncHandler(async (req, res) => {
-  const result = await orderService.createOrderFromCart(req.user._id, req.body);
+  const result = await orderService.createOrderFromCart(
+    req.user._id,
+    req.body,
+    req.headers['idempotency-key']
+  );
   return sendSuccess(res, {
     statusCode: 201,
     message: 'Order created successfully',
@@ -75,24 +78,10 @@ const adminListOrders = asyncHandler(async (req, res) => {
 });
 
 const adminUpdateOrderStatus = asyncHandler(async (req, res) => {
-  const { orderStatus } = req.body;
-  if (!Object.values(ORDER_STATUS).includes(orderStatus)) {
-    const error = new Error('Invalid order status');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const order = await Order.findByIdAndUpdate(
-    req.params.id,
-    { orderStatus },
-    { new: true }
-  );
-
-  if (!order) {
-    const error = new Error('Order not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  const order = await orderService.updateOrderStatus(req.params.id, req.body.orderStatus, {
+    adminId: req.user._id,
+    note: req.body.note,
+  });
 
   return sendSuccess(res, {
     message: 'Order status updated',

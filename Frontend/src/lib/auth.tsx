@@ -15,6 +15,8 @@ export type AuthUser = {
   firstName: string;
   lastName: string;
   email: string;
+  /** `/auth/me` returns this, so no extra profile fetch is needed. */
+  phone?: string;
   role: "CUSTOMER" | "ADMIN";
 };
 

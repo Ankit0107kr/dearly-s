@@ -55,19 +55,3 @@ export function openRazorpay(options: RazorpayOptions) {
   if (!window.Razorpay) throw new Error("Razorpay checkout is unavailable.");
   new window.Razorpay(options).open();
 }
-
-export const ORDER_STORAGE_KEY = "gifty.lastOrder.v1";
-
-export type PlacedOrder = {
-  reference: string;
-  paymentId: string | null;
-  demo: boolean;
-  total: number;
-  email: string;
-  fullName: string;
-  address: string;
-  shippingLabel: string;
-  eta: string;
-  items: { name: string; quantity: number; total: number }[];
-  placedAt: string;
-};

@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.get('/', categoryController.listCategories);
 router.get('/tree', categoryController.getCategoryTree);
+router.get('/occasions', categoryController.listOccasions);
 
 module.exports = router;

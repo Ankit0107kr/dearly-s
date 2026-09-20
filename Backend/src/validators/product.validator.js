@@ -18,6 +18,7 @@ const customizationFieldSchema = Joi.object({
 });
 
 const variantSchema = Joi.object({
+  _id: Joi.string().hex().length(24).optional(),
   label: Joi.string().allow(''),
   attributes: Joi.object({
     size: Joi.string().allow(''),
@@ -25,8 +26,10 @@ const variantSchema = Joi.object({
     material: Joi.string().allow(''),
   }).default({}),
   sku: Joi.string().allow(''),
+  swatch: Joi.string().allow(''),
+  priceDelta: Joi.number().min(0),
   price: Joi.number().min(0),
-  stock: Joi.number().min(0).default(0),
+  stock: Joi.number().min(0),
   images: Joi.array().items(imageSchema),
 });
 
@@ -43,9 +46,22 @@ const createProductSchema = Joi.object({
   customizationFields: Joi.array().items(customizationFieldSchema).default([]),
   inventory: Joi.object({
     sku: Joi.string().allow(''),
-    stock: Joi.number().min(0).default(0),
+    stock: Joi.number().min(0),
   }).optional(),
   tags: Joi.array().items(Joi.string()).default([]),
+  occasions: Joi.array().items(Joi.string().hex().length(24)).default([]),
+  badge: Joi.string().allow(''),
+  deliveryEta: Joi.string().allow(''),
+  highlights: Joi.array().items(Joi.string()).default([]),
+  specs: Joi.array()
+    .items(Joi.object({ label: Joi.string().allow(''), value: Joi.string().allow('') }))
+    .default([]),
+  art: Joi.object({
+    from: Joi.string().allow(''),
+    to: Joi.string().allow(''),
+    motif: Joi.string().allow(''),
+    pattern: Joi.string().allow(''),
+  }).optional(),
   isFeatured: Joi.boolean().default(false),
   images: Joi.array().items(imageSchema).default([]),
 });

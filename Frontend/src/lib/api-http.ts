@@ -22,12 +22,38 @@ async function readApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
   }
 }
 
+// Strict Mode mounts twice in dev, so identical in-flight GETs share one request.
+// Nothing is kept once settled (no staleness); client-only, a server map leaks across users.
+const inFlight = new Map<string, Promise<ApiResponse<unknown>>>();
+
 export async function apiFetch<T>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<ApiResponse<T>> {
   const { context = "client", revalidate = 30, ...init } = options;
   const isClient = context === "client";
+  const method = (init.method || "GET").toUpperCase();
+
+  if (isClient && method === "GET") {
+    const shared = inFlight.get(path);
+    if (shared) return shared as Promise<ApiResponse<T>>;
+
+    const request = runFetch<T>(path, init, isClient, revalidate).finally(() => {
+      inFlight.delete(path);
+    });
+    inFlight.set(path, request as Promise<ApiResponse<unknown>>);
+    return request;
+  }
+
+  return runFetch<T>(path, init, isClient, revalidate);
+}
+
+async function runFetch<T>(
+  path: string,
+  init: RequestInit,
+  isClient: boolean,
+  revalidate: number,
+): Promise<ApiResponse<T>> {
   const isFormData =
     typeof FormData !== "undefined" && init.body instanceof FormData;
 

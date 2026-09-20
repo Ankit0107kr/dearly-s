@@ -7,12 +7,13 @@ import { ProductArt } from "@/components/ui/ProductArt";
 import { Stars } from "@/components/ui/Stars";
 import { useCart } from "@/lib/cart";
 import { discountPercent, formatMoney } from "@/lib/money";
-import { occasionById } from "@/data/taxonomy";
+import { useTaxonomy } from "@/components/taxonomy/TaxonomyProvider";
 import type { Product } from "@/lib/types";
 import { Motif } from "@/components/ui/Motif";
 import { Heart } from "lucide-react";
 
 export function ProductCard({ product }: { product: Product }) {
+  const { occasionById } = useTaxonomy();
   const { add } = useCart();
   const [adding, setAdding] = useState(false);
   const [saved, setSaved] = useState(false);
