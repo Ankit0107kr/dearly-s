@@ -232,7 +232,7 @@ optional `startsAt`/`endsAt` window; the public route only returns those current
 Set in `Frontend/.env`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
+BACKEND_BASE_URL=http://localhost:5001/api/v1
 ```
 
 Use `Frontend/src/lib/api.ts` (`authApi`, `userApi`, `orderApi`, `catalogApi`, etc.) with cookies via `credentials: 'include'`.

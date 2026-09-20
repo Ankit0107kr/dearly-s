@@ -1,6 +1,6 @@
-/** Backend REST base (includes `/api/v1`). Override with `NEXT_PUBLIC_API_URL`. */
+/** Backend REST base (includes `/api/v1`). Override with `BACKEND_BASE_URL`. */
 export const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5001/api/v1"
+  process.env.BACKEND_BASE_URL ?? "http://localhost:5001/api/v1"
 ).trim();
 
 /** Relative paths under `API_BASE_URL`. One entry per route in `Backend/src/routes`. */
