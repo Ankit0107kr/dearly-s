@@ -1,5 +1,6 @@
 const Category = require('../models/Category');
 const { slugify } = require('../utils/helpers');
+const { TAXONOMY_KINDS } = require('../utils/constants');
 
 const ensureUniqueCategorySlug = async (name, excludeId) => {
   const base = slugify(name);
@@ -16,13 +17,18 @@ const ensureUniqueCategorySlug = async (name, excludeId) => {
   }
 };
 
-const listCategories = async ({ includeInactive = false } = {}) => {
+const listCategories = async ({ includeInactive = false, kind } = {}) => {
   const filter = includeInactive ? {} : { isActive: true };
-  return Category.find(filter).sort({ name: 1 }).populate('parentCategory', 'name slug');
+  if (kind) {
+    filter.kind = kind;
+  }
+  return Category.find(filter)
+    .sort({ sortOrder: 1, name: 1 })
+    .populate('parentCategory', 'name slug');
 };
 
 const getCategoryTree = async () => {
-  const categories = await listCategories();
+  const categories = await listCategories({ kind: TAXONOMY_KINDS.CATEGORY });
   const map = new Map(categories.map((cat) => [cat._id.toString(), { ...cat.toObject(), children: [] }]));
   const roots = [];
 
@@ -43,6 +49,24 @@ const getCategoryTree = async () => {
   return roots;
 };
 
+// Walks up the proposed parent chain so a category cannot end up inside itself.
+const assertNoCycle = async (categoryId, parentId) => {
+  if (!parentId) {
+    return;
+  }
+
+  let cursor = parentId;
+  while (cursor) {
+    if (cursor.toString() === categoryId.toString()) {
+      const error = new Error('A category cannot be nested inside itself');
+      error.statusCode = 400;
+      throw error;
+    }
+    const parent = await Category.findById(cursor).select('parentCategory');
+    cursor = parent?.parentCategory;
+  }
+};
+
 const createCategory = async (payload) => {
   const slug = payload.slug ? slugify(payload.slug) : await ensureUniqueCategorySlug(payload.name);
   return Category.create({ ...payload, slug });
@@ -54,6 +78,10 @@ const updateCategory = async (id, payload) => {
     const error = new Error('Category not found');
     error.statusCode = 404;
     throw error;
+  }
+
+  if (payload.parentCategory !== undefined) {
+    await assertNoCycle(id, payload.parentCategory);
   }
 
   if (payload.name && !payload.slug) {

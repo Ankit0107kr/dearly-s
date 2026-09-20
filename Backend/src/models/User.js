@@ -22,12 +22,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
     phone: {
       type: String,
       trim: true,
-      sparse: true,
       index: true,
     },
     password: {

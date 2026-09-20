@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { DISCOUNT_TYPES } = require('../utils/constants');
+const { money, moneyJson } = require('../utils/money');
 
 const couponSchema = new mongoose.Schema(
   {
@@ -9,16 +10,15 @@ const couponSchema = new mongoose.Schema(
       unique: true,
       uppercase: true,
       trim: true,
-      index: true,
     },
     discountType: {
       type: String,
       enum: Object.values(DISCOUNT_TYPES),
       required: true,
     },
-    discountValue: { type: Number, required: true, min: 0 },
-    minimumAmount: { type: Number, default: 0, min: 0 },
-    maximumDiscount: { type: Number, min: 0 },
+    discountValue: money({ required: true }),
+    minimumAmount: money({ default: 0 }),
+    maximumDiscount: money(),
     startDate: { type: Date, required: true },
     expiryDate: { type: Date, required: true },
     usageLimit: { type: Number, min: 1 },
@@ -27,7 +27,7 @@ const couponSchema = new mongoose.Schema(
     applicableProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
     isActive: { type: Boolean, default: true, index: true },
   },
-  { timestamps: true }
+  { timestamps: true, ...moneyJson }
 );
 
 module.exports = mongoose.model('Coupon', couponSchema);

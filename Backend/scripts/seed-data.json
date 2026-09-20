@@ -1,0 +1,2178 @@
+{
+  "categories": [
+    {
+      "kind": "CATEGORY",
+      "name": "Gift Hampers",
+      "slug": "gift-hampers",
+      "blurb": "Curated boxes that open like a little ceremony.",
+      "motif": "gift",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1000&q=72",
+        "alt": "Gift Hampers"
+      },
+      "sortOrder": 0
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Personalised",
+      "slug": "personalised",
+      "blurb": "Names, dates, inside jokes — engraved to last.",
+      "motif": "engrave",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1000&q=72",
+        "alt": "Personalised"
+      },
+      "sortOrder": 1
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Home & Living",
+      "slug": "home-living",
+      "blurb": "Warm objects for the corners people love most.",
+      "motif": "candle",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1000&q=72",
+        "alt": "Home & Living"
+      },
+      "sortOrder": 2
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Gourmet",
+      "slug": "gourmet",
+      "blurb": "Small-batch sweet and savoury indulgences.",
+      "motif": "chocolate",
+      "accent": "var(--color-accent-700)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1481833761820-0509d3217039?auto=format&fit=crop&w=1000&q=72",
+        "alt": "Gourmet"
+      },
+      "sortOrder": 3
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Tech & Desk",
+      "slug": "tech-desk",
+      "blurb": "Clever things for the people who tinker.",
+      "motif": "headphones",
+      "accent": "var(--color-accent-400)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1000&q=72",
+        "alt": "Tech & Desk"
+      },
+      "sortOrder": 4
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Kids & Play",
+      "slug": "kids-play",
+      "blurb": "Joy-first gifts for the smallest humans.",
+      "motif": "toy",
+      "accent": "var(--color-accent-300)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1000&q=72",
+        "alt": "Kids & Play"
+      },
+      "sortOrder": 5
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Luxe Boxes",
+      "slug": "luxe-boxes",
+      "parentSlug": "gift-hampers",
+      "sortOrder": 0
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Mini Hampers",
+      "slug": "mini-hampers",
+      "parentSlug": "gift-hampers",
+      "sortOrder": 1
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Corporate Sets",
+      "slug": "corporate-sets",
+      "parentSlug": "gift-hampers",
+      "sortOrder": 2
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Engraved",
+      "slug": "engraved",
+      "parentSlug": "personalised",
+      "sortOrder": 3
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Photo Gifts",
+      "slug": "photo-gifts",
+      "parentSlug": "personalised",
+      "sortOrder": 4
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Name Art",
+      "slug": "name-art",
+      "parentSlug": "personalised",
+      "sortOrder": 5
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Candles",
+      "slug": "candles",
+      "parentSlug": "home-living",
+      "sortOrder": 6
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Decor",
+      "slug": "decor",
+      "parentSlug": "home-living",
+      "sortOrder": 7
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Kitchen",
+      "slug": "kitchen",
+      "parentSlug": "home-living",
+      "sortOrder": 8
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Chocolate",
+      "slug": "chocolate",
+      "parentSlug": "gourmet",
+      "sortOrder": 9
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Tea & Coffee",
+      "slug": "tea-coffee",
+      "parentSlug": "gourmet",
+      "sortOrder": 10
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Bakes",
+      "slug": "bakes",
+      "parentSlug": "gourmet",
+      "sortOrder": 11
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Audio",
+      "slug": "audio",
+      "parentSlug": "tech-desk",
+      "sortOrder": 12
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Desk Setup",
+      "slug": "desk-setup",
+      "parentSlug": "tech-desk",
+      "sortOrder": 13
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Gadgets",
+      "slug": "gadgets",
+      "parentSlug": "tech-desk",
+      "sortOrder": 14
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Soft Toys",
+      "slug": "soft-toys",
+      "parentSlug": "kids-play",
+      "sortOrder": 15
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Games",
+      "slug": "games",
+      "parentSlug": "kids-play",
+      "sortOrder": 16
+    },
+    {
+      "kind": "CATEGORY",
+      "name": "Keepsakes",
+      "slug": "keepsakes",
+      "parentSlug": "kids-play",
+      "sortOrder": 17
+    }
+  ],
+  "occasions": [
+    {
+      "kind": "OCCASION",
+      "name": "Birthday",
+      "slug": "birthday",
+      "note": "The one you cannot be late for",
+      "window": "All year",
+      "motif": "cake",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=72",
+        "alt": "Birthday"
+      },
+      "sortOrder": 0
+    },
+    {
+      "kind": "OCCASION",
+      "name": "Anniversary",
+      "slug": "anniversary",
+      "note": "Years counted properly",
+      "window": "All year",
+      "motif": "anniversary",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1512909006721-3d6018887383?auto=format&fit=crop&w=900&q=72",
+        "alt": "Anniversary"
+      },
+      "sortOrder": 1
+    },
+    {
+      "kind": "OCCASION",
+      "name": "Wedding",
+      "slug": "wedding",
+      "note": "For the couple and the parents",
+      "window": "Nov – Feb",
+      "motif": "ring",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=900&q=72",
+        "alt": "Wedding"
+      },
+      "sortOrder": 2
+    },
+    {
+      "kind": "OCCASION",
+      "name": "Diwali",
+      "slug": "diwali",
+      "note": "Light, sweets and good paper",
+      "window": "Oct – Nov",
+      "motif": "diya",
+      "accent": "var(--color-accent-400)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=900&q=72",
+        "alt": "Diwali"
+      },
+      "sortOrder": 3
+    },
+    {
+      "kind": "OCCASION",
+      "name": "Thank You",
+      "slug": "thank-you",
+      "note": "Said better with an object",
+      "window": "All year",
+      "motif": "thanks",
+      "accent": "var(--color-accent-700)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=900&q=72",
+        "alt": "Thank You"
+      },
+      "sortOrder": 4
+    },
+    {
+      "kind": "OCCASION",
+      "name": "Housewarming",
+      "slug": "housewarming",
+      "note": "Salt, bread, honey, light",
+      "window": "All year",
+      "motif": "home",
+      "accent": "var(--color-accent-600)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=900&q=72",
+        "alt": "Housewarming"
+      },
+      "sortOrder": 5
+    },
+    {
+      "kind": "OCCASION",
+      "name": "Corporate",
+      "slug": "corporate",
+      "note": "Ten units or a thousand",
+      "window": "All year",
+      "motif": "work",
+      "accent": "var(--color-ink-soft)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=72",
+        "alt": "Corporate"
+      },
+      "sortOrder": 6
+    },
+    {
+      "kind": "OCCASION",
+      "name": "New Baby",
+      "slug": "new-baby",
+      "note": "For the family, not just the baby",
+      "window": "All year",
+      "motif": "baby",
+      "accent": "var(--color-accent-300)",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=900&q=72",
+        "alt": "New Baby"
+      },
+      "sortOrder": 7
+    }
+  ],
+  "products": [
+    {
+      "name": "Midnight Celebration Hamper",
+      "slug": "midnight-celebration-hamper",
+      "description": "A deep-navy keepsake box holding single-origin truffles, a beeswax candle, hand-rolled incense and a letterpress card. Packed by hand in Jaipur, finished with a silk pull-ribbon that makes the unboxing the best part of the evening.",
+      "shortDescription": "The whole party, boxed and ribboned.",
+      "categorySlug": "gift-hampers",
+      "subCategorySlug": "luxe-boxes",
+      "occasionSlugs": [
+        "birthday",
+        "anniversary",
+        "diwali"
+      ],
+      "price": 5490,
+      "discountPrice": 4290,
+      "tags": [
+        "bestseller",
+        "gift-wrapped",
+        "handmade"
+      ],
+      "rating": 4.9,
+      "reviewCount": 412,
+      "badge": "Bestseller",
+      "deliveryEta": "2–4 days",
+      "highlights": [
+        "12 single-origin truffles from a Coonoor micro-batch",
+        "Hand-poured beeswax candle, 40-hour burn",
+        "Letterpress card printed with your message",
+        "Reusable rigid keepsake box"
+      ],
+      "specs": [
+        {
+          "label": "Box size",
+          "value": "28 × 22 × 9 cm"
+        },
+        {
+          "label": "Contents",
+          "value": "6 curated items"
+        },
+        {
+          "label": "Shelf life",
+          "value": "90 days"
+        },
+        {
+          "label": "Origin",
+          "value": "Jaipur, India"
+        }
+      ],
+      "art": {
+        "from": "#f6f3fe",
+        "to": "#eae5f8",
+        "motif": "gift",
+        "pattern": "confetti"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "MIDNIGHT-CELEBRATI",
+        "stock": 18
+      },
+      "variants": [
+        {
+          "label": "Classic",
+          "swatch": "#201838",
+          "priceDelta": 0,
+          "sku": "MIDNIGHT-CELEBRATI-V1",
+          "stock": 18
+        },
+        {
+          "label": "Grand (+3 items)",
+          "swatch": "#7a5ad6",
+          "priceDelta": 1200,
+          "sku": "MIDNIGHT-CELEBRATI-V2",
+          "stock": 18
+        }
+      ],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Midnight Celebration Hamper"
+        }
+      ]
+    },
+    {
+      "name": "Engraved Brass Compass",
+      "slug": "engraved-brass-compass",
+      "description": "Solid brass, working needle, and a hinged lid we engrave with up to forty characters. It arrives with a waxed leather pouch and a small card explaining how to read a bearing — because the gift is half object, half excuse to go somewhere.",
+      "shortDescription": "Point them somewhere lovely.",
+      "categorySlug": "personalised",
+      "subCategorySlug": "engraved",
+      "occasionSlugs": [
+        "anniversary",
+        "thank-you",
+        "wedding"
+      ],
+      "price": 2490,
+      "tags": [
+        "engravable",
+        "heirloom"
+      ],
+      "rating": 4.8,
+      "reviewCount": 268,
+      "badge": "Engravable",
+      "deliveryEta": "4–6 days",
+      "highlights": [
+        "Up to 40 characters engraved free",
+        "Solid brass with anti-tarnish lacquer",
+        "Waxed leather carry pouch included"
+      ],
+      "specs": [
+        {
+          "label": "Diameter",
+          "value": "5 cm"
+        },
+        {
+          "label": "Material",
+          "value": "Solid brass"
+        },
+        {
+          "label": "Engraving",
+          "value": "Laser, 40 characters"
+        },
+        {
+          "label": "Weight",
+          "value": "180 g"
+        }
+      ],
+      "art": {
+        "from": "#f2eefc",
+        "to": "#e5dff5",
+        "motif": "compass",
+        "pattern": "rings"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "ENGRAVED-BRASS-COM",
+        "stock": 32
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Engraved Brass Compass"
+        }
+      ]
+    },
+    {
+      "name": "Saffron & Fig Candle Trio",
+      "slug": "saffron-fig-candle-trio",
+      "description": "Saffron Dusk, Black Fig and Cold Sandal — poured in reusable ceramic tumblers with cotton wicks. Burns clean for about thirty hours each, then keeps living as a brush pot.",
+      "shortDescription": "Three moods, one shelf.",
+      "categorySlug": "home-living",
+      "subCategorySlug": "candles",
+      "occasionSlugs": [
+        "housewarming",
+        "diwali",
+        "thank-you"
+      ],
+      "price": 2290,
+      "discountPrice": 1890,
+      "tags": [
+        "vegan",
+        "reusable"
+      ],
+      "rating": 4.7,
+      "reviewCount": 531,
+      "deliveryEta": "2–4 days",
+      "highlights": [
+        "Soy-coconut wax, zero paraffin",
+        "~30 hour burn per tumbler",
+        "Ceramic vessels made to be reused"
+      ],
+      "specs": [
+        {
+          "label": "Volume",
+          "value": "3 × 120 g"
+        },
+        {
+          "label": "Wax",
+          "value": "Soy-coconut blend"
+        },
+        {
+          "label": "Wick",
+          "value": "Braided cotton"
+        },
+        {
+          "label": "Burn time",
+          "value": "30 hours each"
+        }
+      ],
+      "art": {
+        "from": "#f8f6ff",
+        "to": "#ece8fa",
+        "motif": "candle",
+        "pattern": "waves"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "SAFFRON-FIG-CANDLE",
+        "stock": 64
+      },
+      "variants": [
+        {
+          "label": "Warm Set",
+          "swatch": "#a98ce9",
+          "priceDelta": 0,
+          "sku": "SAFFRON-FIG-CANDLE-V1",
+          "stock": 64
+        },
+        {
+          "label": "Fresh Set",
+          "swatch": "#5b3fae",
+          "priceDelta": 0,
+          "sku": "SAFFRON-FIG-CANDLE-V2",
+          "stock": 64
+        }
+      ],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1000&q=72",
+          "alt": "Saffron & Fig Candle Trio"
+        }
+      ]
+    },
+    {
+      "name": "Single-Origin Chocolate Flight",
+      "slug": "single-origin-chocolate-flight",
+      "description": "Six bars from six Indian estates, ranging 55% to 85%, with a tasting map that tells you what to notice in each. Designed to be eaten slowly with someone who will argue about which one wins.",
+      "shortDescription": "A tasting tour in six squares.",
+      "categorySlug": "gourmet",
+      "subCategorySlug": "chocolate",
+      "occasionSlugs": [
+        "thank-you",
+        "birthday",
+        "corporate"
+      ],
+      "price": 1590,
+      "tags": [
+        "small-batch",
+        "vegan-option"
+      ],
+      "rating": 4.9,
+      "reviewCount": 744,
+      "badge": "Top rated",
+      "deliveryEta": "2–3 days",
+      "highlights": [
+        "Six estates across Idukki and the Anamalais",
+        "55% to 85% cacao range",
+        "Illustrated tasting map included"
+      ],
+      "specs": [
+        {
+          "label": "Weight",
+          "value": "6 × 45 g"
+        },
+        {
+          "label": "Cacao",
+          "value": "55% – 85%"
+        },
+        {
+          "label": "Allergens",
+          "value": "May contain nuts, milk"
+        },
+        {
+          "label": "Shelf life",
+          "value": "8 months"
+        }
+      ],
+      "art": {
+        "from": "#f0ecfc",
+        "to": "#e0daf3",
+        "motif": "chocolate",
+        "pattern": "dots"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "SINGLE-ORIGIN-CHOC",
+        "stock": 120
+      },
+      "variants": [],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1481833761820-0509d3217039?auto=format&fit=crop&w=1000&q=72",
+          "alt": "Single-Origin Chocolate Flight"
+        }
+      ]
+    },
+    {
+      "name": "Aurora Desk Lamp",
+      "slug": "aurora-desk-lamp",
+      "description": "A brushed-aluminium arc lamp with stepless dimming and a memory of your last setting. Touch the base to wake it; hold to fade. It is the sort of object that quietly improves every evening at a desk.",
+      "shortDescription": "Warm light that knows when to dim.",
+      "categorySlug": "tech-desk",
+      "subCategorySlug": "desk-setup",
+      "occasionSlugs": [
+        "housewarming",
+        "corporate",
+        "birthday"
+      ],
+      "price": 6490,
+      "discountPrice": 5490,
+      "tags": [
+        "usb-c",
+        "dimmable"
+      ],
+      "rating": 4.6,
+      "reviewCount": 189,
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "Stepless dimming with last-setting memory",
+        "2700K–5000K adjustable warmth",
+        "USB-C powered, 1.8 m braided cable"
+      ],
+      "specs": [
+        {
+          "label": "Height",
+          "value": "42 cm"
+        },
+        {
+          "label": "Power",
+          "value": "9 W, USB-C"
+        },
+        {
+          "label": "Colour temp",
+          "value": "2700K – 5000K"
+        },
+        {
+          "label": "Warranty",
+          "value": "2 years"
+        }
+      ],
+      "art": {
+        "from": "#f5f1fd",
+        "to": "#e8e2f7",
+        "motif": "lamp",
+        "pattern": "rings"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "AURORA-DESK-LAMP",
+        "stock": 22
+      },
+      "variants": [
+        {
+          "label": "Silver",
+          "swatch": "#cfc6ea",
+          "priceDelta": 0,
+          "sku": "AURORA-DESK-LAMP-V1",
+          "stock": 22
+        },
+        {
+          "label": "Graphite",
+          "swatch": "#3d3466",
+          "priceDelta": 200,
+          "sku": "AURORA-DESK-LAMP-V2",
+          "stock": 22
+        }
+      ],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Aurora Desk Lamp"
+        }
+      ]
+    },
+    {
+      "name": "Constellation Map Print",
+      "slug": "constellation-map-print",
+      "description": "Give us a date, a time and a place, and we plot the sky as it actually stood. Printed on 300gsm archival cotton rag with a deep-navy ink that holds its colour for decades.",
+      "shortDescription": "The exact sky, on the exact night.",
+      "categorySlug": "personalised",
+      "subCategorySlug": "name-art",
+      "occasionSlugs": [
+        "anniversary",
+        "wedding",
+        "new-baby"
+      ],
+      "price": 1990,
+      "tags": [
+        "custom",
+        "archival"
+      ],
+      "rating": 4.8,
+      "reviewCount": 356,
+      "badge": "Made to order",
+      "deliveryEta": "5–7 days",
+      "highlights": [
+        "Astronomically accurate for any date since 1900",
+        "300gsm archival cotton rag",
+        "Your own caption set in letterpress type"
+      ],
+      "specs": [
+        {
+          "label": "Paper",
+          "value": "300gsm cotton rag"
+        },
+        {
+          "label": "Sizes",
+          "value": "A3 / A2"
+        },
+        {
+          "label": "Ink",
+          "value": "Pigment archival"
+        },
+        {
+          "label": "Made in",
+          "value": "Bengaluru"
+        }
+      ],
+      "art": {
+        "from": "#f2effc",
+        "to": "#e3ddf4",
+        "motif": "stars",
+        "pattern": "confetti"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "CONSTELLATION-MAP-",
+        "stock": 45
+      },
+      "variants": [
+        {
+          "label": "A3 Print",
+          "swatch": "#a98ce9",
+          "priceDelta": 0,
+          "sku": "CONSTELLATION-MAP--V1",
+          "stock": 45
+        },
+        {
+          "label": "A2 Print",
+          "swatch": "#3d3466",
+          "priceDelta": 900,
+          "sku": "CONSTELLATION-MAP--V2",
+          "stock": 45
+        },
+        {
+          "label": "A2 Framed",
+          "swatch": "#201838",
+          "priceDelta": 2100,
+          "sku": "CONSTELLATION-MAP--V3",
+          "stock": 45
+        }
+      ],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Constellation Map Print"
+        }
+      ]
+    },
+    {
+      "name": "First Flush Tea Library",
+      "slug": "first-flush-tea-library",
+      "description": "Darjeeling first flush, Nilgiri frost, Assam orthodox and six more, each in a stamped tin with brewing notes on the underside of the lid. The wooden tray it ships in becomes the way you store it.",
+      "shortDescription": "Nine tins, one very good month.",
+      "categorySlug": "gourmet",
+      "subCategorySlug": "tea-coffee",
+      "occasionSlugs": [
+        "thank-you",
+        "corporate",
+        "diwali"
+      ],
+      "price": 2890,
+      "tags": [
+        "loose-leaf",
+        "gift-wrapped"
+      ],
+      "rating": 4.7,
+      "reviewCount": 298,
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "Nine single-estate loose-leaf teas",
+        "Brewing notes stamped inside each lid",
+        "Sheesham wood presentation tray"
+      ],
+      "specs": [
+        {
+          "label": "Weight",
+          "value": "9 × 25 g"
+        },
+        {
+          "label": "Type",
+          "value": "Loose leaf"
+        },
+        {
+          "label": "Tray",
+          "value": "Sheesham wood"
+        },
+        {
+          "label": "Shelf life",
+          "value": "12 months"
+        }
+      ],
+      "art": {
+        "from": "#241a47",
+        "to": "#3d2f6b",
+        "motif": "tea",
+        "pattern": "waves"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "FIRST-FLUSH-TEA-LI",
+        "stock": 38
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=72",
+          "alt": "First Flush Tea Library"
+        }
+      ]
+    },
+    {
+      "name": "Cloudsoft Weighted Bear",
+      "slug": "cloudsoft-weighted-bear",
+      "description": "A 1.8 kg weighted bear in organic bouclé, filled with glass microbeads and washable at forty degrees. Small children fall asleep on it; adults quietly keep it on the reading chair.",
+      "shortDescription": "Heavy enough to feel like a hug.",
+      "categorySlug": "kids-play",
+      "subCategorySlug": "soft-toys",
+      "occasionSlugs": [
+        "new-baby",
+        "birthday"
+      ],
+      "price": 1790,
+      "tags": [
+        "organic",
+        "machine-washable"
+      ],
+      "rating": 4.9,
+      "reviewCount": 620,
+      "badge": "Parent pick",
+      "deliveryEta": "2–4 days",
+      "highlights": [
+        "1.8 kg weighted for calming pressure",
+        "GOTS-certified organic bouclé shell",
+        "Machine washable at 40°C"
+      ],
+      "specs": [
+        {
+          "label": "Height",
+          "value": "38 cm"
+        },
+        {
+          "label": "Weight",
+          "value": "1.8 kg"
+        },
+        {
+          "label": "Fill",
+          "value": "Glass microbeads"
+        },
+        {
+          "label": "Age",
+          "value": "3 years +"
+        }
+      ],
+      "art": {
+        "from": "#f2eefc",
+        "to": "#e5dff5",
+        "motif": "toy",
+        "pattern": "dots"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "CLOUDSOFT-WEIGHTED",
+        "stock": 54
+      },
+      "variants": [
+        {
+          "label": "Oat",
+          "swatch": "#e6dcfb",
+          "priceDelta": 0,
+          "sku": "CLOUDSOFT-WEIGHTED-V1",
+          "stock": 54
+        },
+        {
+          "label": "Blush",
+          "swatch": "#c3aef2",
+          "priceDelta": 0,
+          "sku": "CLOUDSOFT-WEIGHTED-V2",
+          "stock": 54
+        }
+      ],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Cloudsoft Weighted Bear"
+        }
+      ]
+    },
+    {
+      "name": "Pocket Espresso Press",
+      "slug": "pocket-espresso-press",
+      "description": "A hand-pumped press that pulls nine bars from a palm-sized cylinder. Works with ground coffee or pods, cleans in about twenty seconds, and turns a hotel room into a passable café.",
+      "shortDescription": "Real crema, no power required.",
+      "categorySlug": "tech-desk",
+      "subCategorySlug": "gadgets",
+      "occasionSlugs": [
+        "birthday",
+        "corporate",
+        "thank-you"
+      ],
+      "price": 4590,
+      "discountPrice": 3890,
+      "tags": [
+        "travel",
+        "no-electricity"
+      ],
+      "rating": 4.5,
+      "reviewCount": 214,
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "9 bar pressure from a hand pump",
+        "Works with grounds or capsules",
+        "Fits a jacket pocket at 21 cm"
+      ],
+      "specs": [
+        {
+          "label": "Length",
+          "value": "21 cm"
+        },
+        {
+          "label": "Pressure",
+          "value": "9 bar"
+        },
+        {
+          "label": "Capacity",
+          "value": "80 ml"
+        },
+        {
+          "label": "Warranty",
+          "value": "1 year"
+        }
+      ],
+      "art": {
+        "from": "#f8f6ff",
+        "to": "#ece8fa",
+        "motif": "coffee",
+        "pattern": "rings"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "POCKET-ESPRESSO-PR",
+        "stock": 29
+      },
+      "variants": [],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Pocket Espresso Press"
+        }
+      ]
+    },
+    {
+      "name": "Terracotta Planter Duo",
+      "slug": "terracotta-planter-duo",
+      "description": "Wheel-thrown in Pondicherry, unglazed outside so the clay breathes, sealed inside so your table survives. Sold as a tall-and-short pair because plants, like people, come in sizes.",
+      "shortDescription": "Two pots, thrown by one pair of hands.",
+      "categorySlug": "home-living",
+      "subCategorySlug": "decor",
+      "occasionSlugs": [
+        "housewarming",
+        "thank-you"
+      ],
+      "price": 1390,
+      "tags": [
+        "handmade",
+        "plastic-free"
+      ],
+      "rating": 4.6,
+      "reviewCount": 177,
+      "deliveryEta": "4–6 days",
+      "highlights": [
+        "Wheel-thrown, so no two are identical",
+        "Unglazed exterior for healthy roots",
+        "Drainage hole with cork stopper"
+      ],
+      "specs": [
+        {
+          "label": "Heights",
+          "value": "16 cm & 11 cm"
+        },
+        {
+          "label": "Material",
+          "value": "Terracotta"
+        },
+        {
+          "label": "Drainage",
+          "value": "Yes, corked"
+        },
+        {
+          "label": "Origin",
+          "value": "Pondicherry"
+        }
+      ],
+      "art": {
+        "from": "#f0ecfc",
+        "to": "#e0daf3",
+        "motif": "plant",
+        "pattern": "waves"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "TERRACOTTA-PLANTER",
+        "stock": 71
+      },
+      "variants": [],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Terracotta Planter Duo"
+        }
+      ]
+    },
+    {
+      "name": "Anniversary Letter Box",
+      "slug": "anniversary-letter-box",
+      "description": "A wooden box of twelve sealed envelopes, each prompting a letter for a different month — the fight you got over, the trip you keep meaning to take. You write them; they open them slowly.",
+      "shortDescription": "Twelve letters, opened one a month.",
+      "categorySlug": "personalised",
+      "subCategorySlug": "photo-gifts",
+      "occasionSlugs": [
+        "anniversary",
+        "wedding"
+      ],
+      "price": 2290,
+      "tags": [
+        "slow-gift",
+        "keepsake"
+      ],
+      "rating": 5,
+      "reviewCount": 143,
+      "badge": "Editor's pick",
+      "deliveryEta": "5–7 days",
+      "highlights": [
+        "Twelve prompt cards, one per month",
+        "Wax seal kit included",
+        "Lid engraved with both names"
+      ],
+      "specs": [
+        {
+          "label": "Box",
+          "value": "Mango wood, 24 × 16 cm"
+        },
+        {
+          "label": "Contents",
+          "value": "12 envelopes + seals"
+        },
+        {
+          "label": "Engraving",
+          "value": "Two names + year"
+        },
+        {
+          "label": "Paper",
+          "value": "160gsm laid"
+        }
+      ],
+      "art": {
+        "from": "#f5f1fd",
+        "to": "#e8e2f7",
+        "motif": "letter",
+        "pattern": "confetti"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "ANNIVERSARY-LETTER",
+        "stock": 26
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1512909006721-3d6018887383?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Anniversary Letter Box"
+        }
+      ]
+    },
+    {
+      "name": "Festive Diya Collection",
+      "slug": "festive-diya-collection",
+      "description": "Nine brass-and-clay diyas painted in a workshop in Moradabad, packed in a tray with a bag of cotton wicks and a small bottle of scented oil. They arrive ready to light the same evening.",
+      "shortDescription": "Nine lamps, hand-painted this week.",
+      "categorySlug": "home-living",
+      "subCategorySlug": "decor",
+      "occasionSlugs": [
+        "diwali",
+        "housewarming"
+      ],
+      "price": 1490,
+      "discountPrice": 1190,
+      "tags": [
+        "handpainted",
+        "festive"
+      ],
+      "rating": 4.8,
+      "reviewCount": 402,
+      "badge": "Festive",
+      "deliveryEta": "2–4 days",
+      "highlights": [
+        "Nine hand-painted diyas, no two alike",
+        "Cotton wicks and scented oil included",
+        "Packed in a reusable kraft tray"
+      ],
+      "specs": [
+        {
+          "label": "Count",
+          "value": "9 diyas"
+        },
+        {
+          "label": "Material",
+          "value": "Brass and clay"
+        },
+        {
+          "label": "Includes",
+          "value": "Wicks + 100 ml oil"
+        },
+        {
+          "label": "Origin",
+          "value": "Moradabad"
+        }
+      ],
+      "art": {
+        "from": "#f2effc",
+        "to": "#e3ddf4",
+        "motif": "diya",
+        "pattern": "dots"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "FESTIVE-DIYA-COLLE",
+        "stock": 88
+      },
+      "variants": [],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Festive Diya Collection"
+        }
+      ]
+    },
+    {
+      "name": "Desk Reset Kit",
+      "slug": "desk-reset-kit",
+      "description": "A felt cable tray, four magnetic clips, a walnut monitor riser and a screen cloth that actually works. Ships flat, assembles in about a minute, and fixes a desk for good.",
+      "shortDescription": "For the colleague whose cables are a crime.",
+      "categorySlug": "tech-desk",
+      "subCategorySlug": "desk-setup",
+      "occasionSlugs": [
+        "corporate",
+        "thank-you",
+        "birthday"
+      ],
+      "price": 3190,
+      "tags": [
+        "wfh",
+        "corporate-friendly"
+      ],
+      "rating": 4.4,
+      "reviewCount": 131,
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "Walnut riser rated to 20 kg",
+        "Wool-felt cable tray, tool-free fit",
+        "Four magnetic cable clips"
+      ],
+      "specs": [
+        {
+          "label": "Riser",
+          "value": "60 × 22 cm walnut"
+        },
+        {
+          "label": "Load",
+          "value": "Up to 20 kg"
+        },
+        {
+          "label": "Assembly",
+          "value": "Tool-free"
+        },
+        {
+          "label": "Warranty",
+          "value": "1 year"
+        }
+      ],
+      "art": {
+        "from": "#f6f3fe",
+        "to": "#eae5f8",
+        "motif": "desk",
+        "pattern": "rings"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "DESK-RESET-KIT",
+        "stock": 40
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1593642532842-98d0fd5ebc1a?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Desk Reset Kit"
+        }
+      ]
+    },
+    {
+      "name": "Birthday Cake In A Jar",
+      "slug": "birthday-cake-in-a-jar",
+      "description": "Layered sponge, ganache and crumb in a sealed jar that survives the post. Comes with a candle, a match striker on the lid and a printed message band you write yourself.",
+      "shortDescription": "Posted anywhere, candle included.",
+      "categorySlug": "gourmet",
+      "subCategorySlug": "bakes",
+      "occasionSlugs": [
+        "birthday",
+        "thank-you"
+      ],
+      "price": 890,
+      "tags": [
+        "eggless-option",
+        "postable"
+      ],
+      "rating": 4.7,
+      "reviewCount": 889,
+      "badge": "Ships same day",
+      "deliveryEta": "1–2 days",
+      "highlights": [
+        "Sealed jar, safe for courier",
+        "Candle and striker lid",
+        "Eggless available on every flavour"
+      ],
+      "specs": [
+        {
+          "label": "Weight",
+          "value": "320 g"
+        },
+        {
+          "label": "Serves",
+          "value": "2"
+        },
+        {
+          "label": "Keep",
+          "value": "Refrigerate, eat in 5 days"
+        },
+        {
+          "label": "Allergens",
+          "value": "Milk, wheat, soy"
+        }
+      ],
+      "art": {
+        "from": "#2c2154",
+        "to": "#453675",
+        "motif": "cake",
+        "pattern": "confetti"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "BIRTHDAY-CAKE-IN-A",
+        "stock": 150
+      },
+      "variants": [
+        {
+          "label": "Dark Chocolate",
+          "swatch": "#2c2350",
+          "priceDelta": 0,
+          "sku": "BIRTHDAY-CAKE-IN-A-V1",
+          "stock": 150
+        },
+        {
+          "label": "Red Velvet",
+          "swatch": "#5b3fae",
+          "priceDelta": 0,
+          "sku": "BIRTHDAY-CAKE-IN-A-V2",
+          "stock": 150
+        },
+        {
+          "label": "Butterscotch",
+          "swatch": "#a98ce9",
+          "priceDelta": 0,
+          "sku": "BIRTHDAY-CAKE-IN-A-V3",
+          "stock": 150
+        }
+      ],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Birthday Cake In A Jar"
+        }
+      ]
+    },
+    {
+      "name": "Mini Thank You Hamper",
+      "slug": "mini-thank-you-hamper",
+      "description": "Four things that say it without a speech: a chocolate bar, a tea sachet set, a beeswax tealight and a card. Sized to fit through most letterboxes, priced to send to everyone who deserves one.",
+      "shortDescription": "Small box, unmistakable point.",
+      "categorySlug": "gift-hampers",
+      "subCategorySlug": "mini-hampers",
+      "occasionSlugs": [
+        "thank-you",
+        "corporate"
+      ],
+      "price": 790,
+      "tags": [
+        "letterbox",
+        "budget"
+      ],
+      "rating": 4.6,
+      "reviewCount": 511,
+      "deliveryEta": "2–3 days",
+      "highlights": [
+        "Fits through a standard letterbox",
+        "Four curated items",
+        "Handwritten card option"
+      ],
+      "specs": [
+        {
+          "label": "Box size",
+          "value": "22 × 15 × 3 cm"
+        },
+        {
+          "label": "Contents",
+          "value": "4 items"
+        },
+        {
+          "label": "Shelf life",
+          "value": "60 days"
+        },
+        {
+          "label": "Card",
+          "value": "Printed or handwritten"
+        }
+      ],
+      "art": {
+        "from": "#f8f6ff",
+        "to": "#ece8fa",
+        "motif": "thanks",
+        "pattern": "dots"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "MINI-THANK-YOU-HAM",
+        "stock": 200
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Mini Thank You Hamper"
+        }
+      ]
+    },
+    {
+      "name": "Studio Over-Ear Headphones",
+      "slug": "studio-over-ear-headphones",
+      "description": "Memory-foam cups, adaptive noise cancelling and a battery that outlasts most long-haul flights. Folds flat into a hard case that fits a laptop sleeve.",
+      "shortDescription": "Forty hours of somewhere else.",
+      "categorySlug": "tech-desk",
+      "subCategorySlug": "audio",
+      "occasionSlugs": [
+        "birthday",
+        "corporate",
+        "anniversary"
+      ],
+      "price": 10990,
+      "discountPrice": 8990,
+      "tags": [
+        "anc",
+        "bluetooth-5-3"
+      ],
+      "rating": 4.6,
+      "reviewCount": 327,
+      "badge": "Premium",
+      "deliveryEta": "2–4 days",
+      "highlights": [
+        "Adaptive noise cancelling",
+        "40 hour battery, 5 min fast charge",
+        "Multipoint pairing across two devices"
+      ],
+      "specs": [
+        {
+          "label": "Battery",
+          "value": "40 hours ANC on"
+        },
+        {
+          "label": "Bluetooth",
+          "value": "5.3, multipoint"
+        },
+        {
+          "label": "Drivers",
+          "value": "40 mm dynamic"
+        },
+        {
+          "label": "Warranty",
+          "value": "2 years"
+        }
+      ],
+      "art": {
+        "from": "#f0ecfc",
+        "to": "#e0daf3",
+        "motif": "headphones",
+        "pattern": "rings"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "STUDIO-OVER-EAR-HE",
+        "stock": 15
+      },
+      "variants": [
+        {
+          "label": "Midnight",
+          "swatch": "#201838",
+          "priceDelta": 0,
+          "sku": "STUDIO-OVER-EAR-HE-V1",
+          "stock": 15
+        },
+        {
+          "label": "Sand",
+          "swatch": "#e6dcfb",
+          "priceDelta": 0,
+          "sku": "STUDIO-OVER-EAR-HE-V2",
+          "stock": 15
+        }
+      ],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Studio Over-Ear Headphones"
+        }
+      ]
+    },
+    {
+      "name": "Wedding Keepsake Trunk",
+      "slug": "wedding-keepsake-trunk",
+      "description": "A brass-cornered trunk with a lined tray for invitations, a slot for a photo book and a velvet pocket for rings. Engraved on the lid with two names and the date.",
+      "shortDescription": "Where the day goes to be kept.",
+      "categorySlug": "gift-hampers",
+      "subCategorySlug": "luxe-boxes",
+      "occasionSlugs": [
+        "wedding",
+        "anniversary"
+      ],
+      "price": 7490,
+      "tags": [
+        "heirloom",
+        "engravable"
+      ],
+      "rating": 4.9,
+      "reviewCount": 96,
+      "deliveryEta": "6–8 days",
+      "highlights": [
+        "Brass corners and a working lock",
+        "Lined tray, photo-book slot, ring pocket",
+        "Lid engraved with names and date"
+      ],
+      "specs": [
+        {
+          "label": "Size",
+          "value": "42 × 30 × 18 cm"
+        },
+        {
+          "label": "Material",
+          "value": "Mango wood, brass"
+        },
+        {
+          "label": "Lining",
+          "value": "Cotton velvet"
+        },
+        {
+          "label": "Engraving",
+          "value": "Included"
+        }
+      ],
+      "art": {
+        "from": "#f5f1fd",
+        "to": "#e8e2f7",
+        "motif": "ring",
+        "pattern": "confetti"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "WEDDING-KEEPSAKE-T",
+        "stock": 12
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Wedding Keepsake Trunk"
+        }
+      ]
+    },
+    {
+      "name": "Growth Chart Wall Hanging",
+      "slug": "growth-chart-wall-hanging",
+      "description": "Canvas and beech growth chart printed with a hand-drawn scale, rolled rather than folded so it hangs flat from day one. The child's name is printed along the top rail.",
+      "shortDescription": "Every height, kept in one place.",
+      "categorySlug": "kids-play",
+      "subCategorySlug": "keepsakes",
+      "occasionSlugs": [
+        "new-baby",
+        "birthday"
+      ],
+      "price": 1490,
+      "tags": [
+        "custom",
+        "nursery"
+      ],
+      "rating": 4.8,
+      "reviewCount": 205,
+      "deliveryEta": "4–6 days",
+      "highlights": [
+        "Name printed on the beech rail",
+        "Measures 50 cm to 160 cm",
+        "Rolled, never folded, so it hangs flat"
+      ],
+      "specs": [
+        {
+          "label": "Length",
+          "value": "170 cm"
+        },
+        {
+          "label": "Material",
+          "value": "Cotton canvas, beech"
+        },
+        {
+          "label": "Range",
+          "value": "50 – 160 cm"
+        },
+        {
+          "label": "Print",
+          "value": "Water-based ink"
+        }
+      ],
+      "art": {
+        "from": "#f2effc",
+        "to": "#e3ddf4",
+        "motif": "ruler",
+        "pattern": "waves"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "GROWTH-CHART-WALL-",
+        "stock": 60
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Growth Chart Wall Hanging"
+        }
+      ]
+    },
+    {
+      "name": "Copper Cocktail Set",
+      "slug": "copper-cocktail-set",
+      "description": "Shaker, jigger, strainer, spoon and muddler in lacquered copper, on a slate board with six classic recipes etched into it. Heavy in the hand in the way good bar tools should be.",
+      "shortDescription": "For the friend who owns four bitters.",
+      "categorySlug": "home-living",
+      "subCategorySlug": "kitchen",
+      "occasionSlugs": [
+        "housewarming",
+        "anniversary",
+        "corporate"
+      ],
+      "price": 4690,
+      "discountPrice": 3990,
+      "tags": [
+        "barware",
+        "gift-wrapped"
+      ],
+      "rating": 4.5,
+      "reviewCount": 162,
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "Five-piece lacquered copper set",
+        "Slate board with six etched recipes",
+        "Weighted shaker with a tight seal"
+      ],
+      "specs": [
+        {
+          "label": "Pieces",
+          "value": "5 tools + board"
+        },
+        {
+          "label": "Shaker",
+          "value": "550 ml"
+        },
+        {
+          "label": "Finish",
+          "value": "Lacquered copper"
+        },
+        {
+          "label": "Care",
+          "value": "Hand wash only"
+        }
+      ],
+      "art": {
+        "from": "#f6f3fe",
+        "to": "#eae5f8",
+        "motif": "cocktail",
+        "pattern": "rings"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "COPPER-COCKTAIL-SE",
+        "stock": 34
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Copper Cocktail Set"
+        }
+      ]
+    },
+    {
+      "name": "Corporate Welcome Set",
+      "slug": "corporate-welcome-set",
+      "description": "Notebook, pen, insulated bottle, sticker sheet and a coffee sachet in a box we can print with your logo. Ordered by the dozen, packed to a consistent standard, delivered to one address or fifty.",
+      "shortDescription": "A first day that feels considered.",
+      "categorySlug": "gift-hampers",
+      "subCategorySlug": "corporate-sets",
+      "occasionSlugs": [
+        "corporate",
+        "thank-you"
+      ],
+      "price": 2690,
+      "tags": [
+        "bulk",
+        "co-branded"
+      ],
+      "rating": 4.4,
+      "reviewCount": 88,
+      "badge": "Bulk friendly",
+      "deliveryEta": "7–9 days",
+      "highlights": [
+        "Your logo printed on box and notebook",
+        "Ships to one address or many",
+        "Volume pricing from 25 units"
+      ],
+      "specs": [
+        {
+          "label": "Contents",
+          "value": "5 items"
+        },
+        {
+          "label": "Branding",
+          "value": "1-colour print"
+        },
+        {
+          "label": "Min order",
+          "value": "10 sets"
+        },
+        {
+          "label": "Lead time",
+          "value": "7 days"
+        }
+      ],
+      "art": {
+        "from": "#f2eefc",
+        "to": "#e5dff5",
+        "motif": "work",
+        "pattern": "dots"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "CORPORATE-WELCOME-",
+        "stock": 300
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Corporate Welcome Set"
+        }
+      ]
+    },
+    {
+      "name": "Memory Game Of Us",
+      "slug": "memory-game-of-us",
+      "description": "Upload twenty photographs and we print a matching-pairs game on linen-finish card, boxed in a tin. It plays properly as a game and works alarmingly well on people who claim not to be sentimental.",
+      "shortDescription": "Forty cards, twenty of your photos.",
+      "categorySlug": "kids-play",
+      "subCategorySlug": "games",
+      "occasionSlugs": [
+        "anniversary",
+        "birthday",
+        "new-baby"
+      ],
+      "price": 1690,
+      "tags": [
+        "photo-upload",
+        "family"
+      ],
+      "rating": 4.7,
+      "reviewCount": 240,
+      "deliveryEta": "5–7 days",
+      "highlights": [
+        "Upload 20 photos, get 40 cards",
+        "Linen-finish, snap-resistant card",
+        "Packed in a printed tin"
+      ],
+      "specs": [
+        {
+          "label": "Cards",
+          "value": "40 (20 pairs)"
+        },
+        {
+          "label": "Card size",
+          "value": "6 × 6 cm"
+        },
+        {
+          "label": "Finish",
+          "value": "Linen matte"
+        },
+        {
+          "label": "Players",
+          "value": "2 – 6"
+        }
+      ],
+      "art": {
+        "from": "#241a47",
+        "to": "#3d2f6b",
+        "motif": "cards",
+        "pattern": "confetti"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "MEMORY-GAME-OF-US",
+        "stock": 48
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Memory Game Of Us"
+        }
+      ]
+    },
+    {
+      "name": "Cold Brew Starter Lab",
+      "slug": "cold-brew-starter-lab",
+      "description": "A borosilicate brewer, a steel mesh filter and two 250 g bags ground for slow extraction. Fill it at night, forget it, pour it over ice in the morning and feel briefly competent.",
+      "shortDescription": "Twelve hours, no effort, perfect coffee.",
+      "categorySlug": "gourmet",
+      "subCategorySlug": "tea-coffee",
+      "occasionSlugs": [
+        "birthday",
+        "housewarming",
+        "thank-you"
+      ],
+      "price": 2290,
+      "tags": [
+        "coffee",
+        "starter-kit"
+      ],
+      "rating": 4.6,
+      "reviewCount": 311,
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "1 litre borosilicate brewer",
+        "Two 250 g bags, ground coarse",
+        "Fridge-ready with a sealed lid"
+      ],
+      "specs": [
+        {
+          "label": "Capacity",
+          "value": "1 litre"
+        },
+        {
+          "label": "Coffee",
+          "value": "2 × 250 g"
+        },
+        {
+          "label": "Filter",
+          "value": "Stainless mesh"
+        },
+        {
+          "label": "Brew time",
+          "value": "12 – 16 hours"
+        }
+      ],
+      "art": {
+        "from": "#f0ecfc",
+        "to": "#e0daf3",
+        "motif": "ice",
+        "pattern": "waves"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "COLD-BREW-STARTER-",
+        "stock": 57
+      },
+      "variants": [],
+      "customizationFields": [],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Cold Brew Starter Lab"
+        }
+      ]
+    },
+    {
+      "name": "Silk Scarf — Bloom",
+      "slug": "silk-scarf-bloom",
+      "description": "Mulberry silk printed with a marigold study by an illustrator in Kolkata, edges rolled and stitched by hand. Folds to nothing in a bag and rescues an outfit on arrival.",
+      "shortDescription": "Hand-rolled edges, painterly print.",
+      "categorySlug": "personalised",
+      "subCategorySlug": "photo-gifts",
+      "occasionSlugs": [
+        "birthday",
+        "anniversary",
+        "diwali"
+      ],
+      "price": 2990,
+      "tags": [
+        "silk",
+        "artist-series"
+      ],
+      "rating": 4.8,
+      "reviewCount": 174,
+      "deliveryEta": "4–6 days",
+      "highlights": [
+        "100% mulberry silk, 16 momme",
+        "Hand-rolled and hand-stitched edges",
+        "Artist series, limited run"
+      ],
+      "specs": [
+        {
+          "label": "Size",
+          "value": "90 × 90 cm"
+        },
+        {
+          "label": "Material",
+          "value": "Mulberry silk"
+        },
+        {
+          "label": "Weight",
+          "value": "16 momme"
+        },
+        {
+          "label": "Care",
+          "value": "Dry clean"
+        }
+      ],
+      "art": {
+        "from": "#f5f1fd",
+        "to": "#e8e2f7",
+        "motif": "flower",
+        "pattern": "waves"
+      },
+      "isFeatured": false,
+      "inventory": {
+        "sku": "SILK-SCARF-BLOOM",
+        "stock": 41
+      },
+      "variants": [
+        {
+          "label": "Marigold",
+          "swatch": "#a98ce9",
+          "priceDelta": 0,
+          "sku": "SILK-SCARF-BLOOM-V1",
+          "stock": 41
+        },
+        {
+          "label": "Indigo",
+          "swatch": "#4e4570",
+          "priceDelta": 0,
+          "sku": "SILK-SCARF-BLOOM-V2",
+          "stock": 41
+        }
+      ],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Silk Scarf — Bloom"
+        }
+      ]
+    },
+    {
+      "name": "Housewarming Ritual Box",
+      "slug": "housewarming-ritual-box",
+      "description": "The old housewarming gifts, done properly: pink salt in a clay pot, a sourdough starter with instructions, forest honey and a tall beeswax candle. A card explains what each one is meant to wish on the house.",
+      "shortDescription": "Salt, bread, honey, light.",
+      "categorySlug": "gift-hampers",
+      "subCategorySlug": "mini-hampers",
+      "occasionSlugs": [
+        "housewarming",
+        "thank-you"
+      ],
+      "price": 2090,
+      "tags": [
+        "traditional",
+        "handmade"
+      ],
+      "rating": 4.9,
+      "reviewCount": 158,
+      "badge": "New",
+      "deliveryEta": "3–5 days",
+      "highlights": [
+        "Live sourdough starter with a feeding guide",
+        "Single-forest honey, 250 g",
+        "Hand-rolled beeswax candle"
+      ],
+      "specs": [
+        {
+          "label": "Contents",
+          "value": "4 items + card"
+        },
+        {
+          "label": "Honey",
+          "value": "250 g raw"
+        },
+        {
+          "label": "Starter",
+          "value": "Live, 5 days old"
+        },
+        {
+          "label": "Shelf life",
+          "value": "Varies by item"
+        }
+      ],
+      "art": {
+        "from": "#f2effc",
+        "to": "#e3ddf4",
+        "motif": "home",
+        "pattern": "dots"
+      },
+      "isFeatured": true,
+      "inventory": {
+        "sku": "HOUSEWARMING-RITUA",
+        "stock": 44
+      },
+      "variants": [],
+      "customizationFields": [
+        {
+          "name": "Personalisation",
+          "type": "TEXT",
+          "required": false,
+          "placeholder": "Name, date or a short message"
+        }
+      ],
+      "images": [
+        {
+          "url": "https://images.unsplash.com/photo-1481833761820-0509d3217039?auto=format&fit=crop&w=1200&q=72",
+          "alt": "Housewarming Ritual Box"
+        }
+      ]
+    }
+  ],
+  "banners": [
+    {
+      "placement": "HOME_HERO",
+      "eyebrow": "Festive drop 2026",
+      "title": "Gifts that land",
+      "accent": "properly.",
+      "copy": "Hand-packed hampers, engraved keepsakes and small-batch gourmet — curated so you can stop scrolling and start giving.",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=2000&q=72",
+        "alt": "A table of wrapped festive gifts"
+      },
+      "ctaLabel": "Shop the drop",
+      "ctaHref": "/products?occasion=diwali",
+      "altCtaLabel": "Browse everything",
+      "altCtaHref": "/products",
+      "motif": "diya",
+      "align": "left",
+      "sortOrder": 0
+    },
+    {
+      "placement": "HOME_HERO",
+      "eyebrow": "Personalised",
+      "title": "Put their name",
+      "accent": "on it.",
+      "copy": "Engraved brass, star maps plotted to a date, photo games printed from your camera roll. Made to order in five days.",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2000&q=72",
+        "alt": "An engraved keepsake on a workbench"
+      },
+      "ctaLabel": "Make it personal",
+      "ctaHref": "/products?category=personalised",
+      "altCtaLabel": "See how it works",
+      "altCtaHref": "/products?personalised=1",
+      "motif": "engrave",
+      "align": "center",
+      "sortOrder": 1
+    },
+    {
+      "placement": "HOME_HERO",
+      "eyebrow": "Under ₹1,000",
+      "title": "Small gifts,",
+      "accent": "big landing.",
+      "copy": "Letterbox hampers, cake in a jar, tea flights. Everything here ships in 48 hours and fits a modest budget.",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1512909006721-3d6018887383?auto=format&fit=crop&w=2000&q=72",
+        "alt": "A small wrapped parcel with ribbon"
+      },
+      "ctaLabel": "Shop under ₹1,000",
+      "ctaHref": "/products?max=100000",
+      "altCtaLabel": "Gift finder",
+      "altCtaHref": "/products",
+      "motif": "gift",
+      "align": "left",
+      "sortOrder": 2
+    },
+    {
+      "placement": "HOME_PROMO",
+      "eyebrow": "Festive offers",
+      "title": "Up to 50% off the festive edit",
+      "copy": "Diyas, candles and warm lamps, reduced until stock runs out. Free express delivery over ₹1,499.",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?auto=format&fit=crop&w=1800&q=72",
+        "alt": "Lit diyas arranged on a dark surface"
+      },
+      "ctaLabel": "Shop the offers",
+      "ctaHref": "/products?occasion=diwali",
+      "motif": "diya",
+      "align": "left",
+      "sortOrder": 0
+    },
+    {
+      "placement": "PLP_TOP",
+      "eyebrow": "Free express delivery",
+      "title": "Orders over ₹1,499 ship free",
+      "copy": "Same-day dispatch on everything in stock before 2pm.",
+      "image": {
+        "url": "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1800&q=72",
+        "alt": "Parcels ready for dispatch"
+      },
+      "ctaLabel": "See delivery options",
+      "ctaHref": "/products?sort=newest",
+      "motif": "gift",
+      "align": "left",
+      "sortOrder": 0
+    }
+  ]
+}

@@ -1,18 +1,19 @@
-const { DELIVERY_TYPES } = require('../utils/constants');
+const { DELIVERY_TYPES, FREE_SHIPPING_THRESHOLD } = require('../utils/constants');
 
 const DELIVERY_FEES = {
-  [DELIVERY_TYPES.STANDARD]: 49,
-  [DELIVERY_TYPES.SAME_DAY]: 149,
-  [DELIVERY_TYPES.EXPRESS]: 99,
-  [DELIVERY_TYPES.SCHEDULED]: 79,
+  [DELIVERY_TYPES.STANDARD]: 99,
+  [DELIVERY_TYPES.SAME_DAY]: 349,
+  [DELIVERY_TYPES.EXPRESS]: 199,
+  [DELIVERY_TYPES.SCHEDULED]: 349,
 };
 
-const calculateDeliveryFee = ({ deliveryType = DELIVERY_TYPES.STANDARD, city }) => {
-  const base = DELIVERY_FEES[deliveryType] ?? DELIVERY_FEES[DELIVERY_TYPES.STANDARD];
-  if (city && String(city).toLowerCase() === 'mumbai') {
-    return Math.max(0, base - 20);
+// The city-based discount that used to live here was removed: it was not shown
+// anywhere in the UI, so the cart preview and the charged total disagreed.
+const calculateDeliveryFee = ({ deliveryType = DELIVERY_TYPES.STANDARD, subtotal = 0 }) => {
+  if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+    return 0;
   }
-  return base;
+  return DELIVERY_FEES[deliveryType] ?? DELIVERY_FEES[DELIVERY_TYPES.STANDARD];
 };
 
 const validateDeliveryDate = ({ deliveryType, deliveryDate }) => {
@@ -53,6 +54,7 @@ const validateDeliverySlot = ({ deliveryType, deliverySlot }) => {
 };
 
 module.exports = {
+  DELIVERY_FEES,
   calculateDeliveryFee,
   validateDeliveryDate,
   validateDeliverySlot,

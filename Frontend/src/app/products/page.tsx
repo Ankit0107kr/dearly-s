@@ -4,15 +4,15 @@ import { Suspense } from "react";
 import { ActiveChips, Filters, MobileFilters, SortSelect } from "@/components/plp/Filters";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Reveal } from "@/components/ui/Reveal";
-import { categoryBySlug, occasionBySlug, occasions, subcategories } from "@/data/taxonomy";
 import { parseCatalogQuery } from "@/lib/catalog";
 import { catalogServer } from "@/lib/api";
+import { loadTaxonomy } from "@/lib/taxonomy-api";
+import { loadBanners } from "@/lib/banners";
+import { PlpBanner } from "@/components/plp/PlpBanner";
 import {
-  applyCatalogClientFilters,
   catalogQueryToApiParams,
   mapApiProductToProduct,
   sortCatalogProducts,
-  type ApiCategoryNode,
   type ApiProductListResult,
 } from "@/lib/product-catalog";
 import type { Product } from "@/lib/types";
@@ -27,14 +27,12 @@ async function loadCatalogProducts(
   query: ReturnType<typeof parseCatalogQuery>,
 ): Promise<{ results: Product[]; error: string | null }> {
   try {
-    const catRes = await catalogServer.categories<{ categories: ApiCategoryNode[] }>();
-    const tree = catRes.data?.categories ?? [];
-    const apiQuery = catalogQueryToApiParams(query, tree);
-    const prodRes = await catalogServer.products<ApiProductListResult>(apiQuery);
+    // Every facet is resolved server-side now, including slug lookups.
+    const prodRes = await catalogServer.products<ApiProductListResult>(
+      catalogQueryToApiParams(query),
+    );
     const items = (prodRes.data?.items ?? []).map(mapApiProductToProduct);
-    const filtered = applyCatalogClientFilters(items, query);
-    const results = sortCatalogProducts(filtered, query.sort);
-    return { results, error: null };
+    return { results: sortCatalogProducts(items, query.sort), error: null };
   } catch (err) {
     return {
       results: [],
@@ -46,13 +44,16 @@ async function loadCatalogProducts(
 export default async function ProductListPage(props: PageProps<"/products">) {
   const sp = await props.searchParams;
   const query = parseCatalogQuery(sp);
-  const { results, error } = await loadCatalogProducts(query);
+  const [{ results, error }, taxonomy, plpBanners] = await Promise.all([
+    loadCatalogProducts(query),
+    loadTaxonomy(),
+    loadBanners("PLP_TOP"),
+  ]);
 
-  const category = query.category ? categoryBySlug.get(query.category) : undefined;
-  const occasion = query.occasion ? occasionBySlug.get(query.occasion) : undefined;
-  const subcategory = query.subcategory
-    ? subcategories.find((s) => s.slug === query.subcategory)
-    : undefined;
+  const { occasions } = taxonomy;
+  const category = taxonomy.categories.find((c) => c.slug === query.category);
+  const occasion = occasions.find((o) => o.slug === query.occasion);
+  const subcategory = taxonomy.subcategories.find((s) => s.slug === query.subcategory);
 
   const heading = subcategory?.name ?? category?.name ?? occasion?.name ?? "Every gift we make";
   const blurb =
@@ -141,6 +142,8 @@ export default async function ProductListPage(props: PageProps<"/products">) {
               </Suspense>
             </div>
           </div>
+
+          {plpBanners[0] && <PlpBanner banner={plpBanners[0]} />}
 
           <div className="mb-6">
             <Suspense fallback={null}>

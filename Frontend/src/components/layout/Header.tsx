@@ -4,16 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { brand, navigation } from "@/data/site";
-import { categories, occasions } from "@/data/taxonomy";
+import { useTaxonomy } from "@/components/taxonomy/TaxonomyProvider";
 import { Menu, Search, ShoppingBag, User } from "lucide-react";
-import { Monogram } from "@/components/ui/Icon";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useCart } from "@/lib/cart";
+import { useAuth } from "@/lib/auth";
 import { Motif } from "@/components/ui/Motif";
 import { X } from "lucide-react";
 
 export function Header() {
+  const { categories, occasions } = useTaxonomy();
   const router = useRouter();
   const { count, openDrawer, hydrated } = useCart();
+  const { user, logout } = useAuth();
+  const [accountOpen, setAccountOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -50,8 +54,10 @@ export function Header() {
     >
       <div className="shell flex items-center justify-between gap-4 py-4">
         <Link href="/" className="group flex items-center gap-2" aria-label={`${brand.name} home`}>
-          <Monogram className="size-10 transition-colors duration-500 ease-out-expo group-hover:bg-ink group-hover:text-cream" />
-          <span className="font-display text-xl tracking-tight">{brand.name}</span>
+          <BrandLogo
+            priority
+            className="h-14 w-auto transition-transform duration-500 ease-out-expo group-hover:scale-[1.04]"
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
@@ -77,13 +83,80 @@ export function Header() {
           >
             <Search className="size-5" strokeWidth={1.4} aria-hidden />
           </button>
-          <Link
-            href="/checkout"
-            aria-label="Account"
-            className="hidden size-10 place-items-center transition-colors duration-500 ease-out-expo hover:text-accent-600 sm:grid"
-          >
-            <User className="size-5" strokeWidth={1.4} aria-hidden />
-          </Link>
+          <div className="relative hidden sm:block">
+            <button
+              type="button"
+              onClick={() => setAccountOpen((o) => !o)}
+              aria-label="Account"
+              className="grid size-10 place-items-center transition-colors duration-500 ease-out-expo hover:text-accent-600"
+            >
+              <User className="size-5" strokeWidth={1.4} aria-hidden />
+            </button>
+            {accountOpen && (
+              <div
+                className="absolute right-0 top-full z-50 mt-2 w-52 rounded-md border border-line bg-cream p-2 shadow-lift"
+                onMouseLeave={() => setAccountOpen(false)}
+              >
+                {user ? (
+                  <>
+                    <p className="px-3 py-2 text-xs text-ink-soft">
+                      Hi, {user.firstName}
+                    </p>
+                    <Link
+                      href="/account"
+                      onClick={() => setAccountOpen(false)}
+                      className="block rounded-xs px-3 py-2 text-sm hover:bg-ink/5"
+                    >
+                      My profile
+                    </Link>
+                    <Link
+                      href="/account?tab=orders"
+                      onClick={() => setAccountOpen(false)}
+                      className="block rounded-xs px-3 py-2 text-sm hover:bg-ink/5"
+                    >
+                      My orders
+                    </Link>
+                    {user.role === "ADMIN" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setAccountOpen(false)}
+                        className="block rounded-xs px-3 py-2 text-sm hover:bg-ink/5"
+                      >
+                        Admin portal
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setAccountOpen(false);
+                        await logout();
+                      }}
+                      className="block w-full rounded-xs px-3 py-2 text-left text-sm hover:bg-ink/5"
+                    >
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setAccountOpen(false)}
+                      className="block rounded-xs px-3 py-2 text-sm hover:bg-ink/5"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setAccountOpen(false)}
+                      className="block rounded-xs px-3 py-2 text-sm hover:bg-ink/5"
+                    >
+                      Register
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={openDrawer}
@@ -255,10 +328,44 @@ export function Header() {
               ))}
             </div>
 
+            <div className="mt-8 border-t border-line pt-6 text-sm">
+              {user ? (
+                <>
+                  <p className="text-ink-soft">Signed in as {user.firstName}</p>
+                  <Link href="/account" onClick={() => setMobileOpen(false)} className="mt-2 block font-medium">
+                    My profile
+                  </Link>
+                  <Link href="/account?tab=orders" onClick={() => setMobileOpen(false)} className="mt-2 block font-medium">
+                    My orders
+                  </Link>
+                  {user.role === "ADMIN" && (
+                    <Link href="/admin" onClick={() => setMobileOpen(false)} className="mt-2 block font-medium">
+                      Admin portal
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className="mt-2 font-medium text-accent-700"
+                    onClick={async () => {
+                      setMobileOpen(false);
+                      await logout();
+                    }}
+                  >
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-4">
+                  <Link href="/login" onClick={() => setMobileOpen(false)}>Sign in</Link>
+                  <Link href="/register" onClick={() => setMobileOpen(false)}>Register</Link>
+                </div>
+              )}
+            </div>
+
             <Link
               href="/products"
               onClick={() => setMobileOpen(false)}
-              className="mt-auto rounded-xs gradient-accent px-6 py-4 text-center text-sm font-bold text-white"
+              className="mt-6 rounded-xs gradient-accent px-6 py-4 text-center text-sm font-bold text-white"
             >
               Shop all gifts
             </Link>

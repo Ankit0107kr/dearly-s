@@ -1,5 +1,8 @@
 const Coupon = require('../models/Coupon');
+const Product = require('../models/Product');
+const CouponRedemption = require('../models/CouponRedemption');
 const { DISCOUNT_TYPES } = require('../utils/constants');
+const { round2 } = require('../utils/money');
 
 const assertCouponIsUsable = (coupon) => {
   const now = new Date();
@@ -23,8 +26,10 @@ const assertCouponIsUsable = (coupon) => {
   }
 };
 
-const calculateDiscountAmount = (coupon, subtotal) => {
-  if (subtotal < coupon.minimumAmount) {
+// minimumAmount qualifies on the whole cart; the discount itself only ever
+// applies to the subtotal of the items the coupon is scoped to.
+const calculateDiscountAmount = (coupon, eligibleSubtotal, cartSubtotal = eligibleSubtotal) => {
+  if (cartSubtotal < coupon.minimumAmount) {
     const error = new Error(`Minimum order amount of ${coupon.minimumAmount} required for this coupon`);
     error.statusCode = 400;
     throw error;
@@ -32,7 +37,7 @@ const calculateDiscountAmount = (coupon, subtotal) => {
 
   let discount = 0;
   if (coupon.discountType === DISCOUNT_TYPES.PERCENTAGE) {
-    discount = (subtotal * coupon.discountValue) / 100;
+    discount = (eligibleSubtotal * coupon.discountValue) / 100;
     if (coupon.maximumDiscount) {
       discount = Math.min(discount, coupon.maximumDiscount);
     }
@@ -40,41 +45,100 @@ const calculateDiscountAmount = (coupon, subtotal) => {
     discount = coupon.discountValue;
   }
 
-  return Math.min(discount, subtotal);
+  return round2(Math.min(discount, eligibleSubtotal));
 };
 
-const validateCouponForCart = async ({ code, subtotal, cartItems = [] }) => {
+const sumItems = (items) => round2(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
+
+const resolveEligibleItems = async (coupon, cartItems) => {
+  const productIds = new Set((coupon.applicableProducts || []).map(String));
+  const categoryIds = new Set((coupon.applicableCategories || []).map(String));
+
+  if (!productIds.size && !categoryIds.size) {
+    return cartItems;
+  }
+
+  let categoriesByProduct = new Map();
+  if (categoryIds.size) {
+    const products = await Product.find({ _id: { $in: cartItems.map((item) => item.productId) } })
+      .select('category subCategory');
+    categoriesByProduct = new Map(
+      products.map((product) => [
+        product._id.toString(),
+        [product.category, product.subCategory].filter(Boolean).map(String),
+      ])
+    );
+  }
+
+  return cartItems.filter((item) => {
+    const id = item.productId.toString();
+    return (
+      productIds.has(id) ||
+      (categoriesByProduct.get(id) || []).some((category) => categoryIds.has(category))
+    );
+  });
+};
+
+const validateCouponForCart = async ({ code, cartItems = [], userId }) => {
   const coupon = await Coupon.findOne({ code: String(code).toUpperCase().trim() });
   assertCouponIsUsable(coupon);
 
-  if (coupon.applicableProducts?.length) {
-    const productIds = cartItems.map((item) => item.productId.toString());
-    const allowed = coupon.applicableProducts.some((id) => productIds.includes(id.toString()));
-    if (!allowed) {
-      const error = new Error('Coupon is not applicable to cart items');
-      error.statusCode = 400;
-      throw error;
-    }
+  if (userId && (await CouponRedemption.exists({ couponId: coupon._id, userId }))) {
+    const error = new Error('You have already used this coupon');
+    error.statusCode = 400;
+    throw error;
   }
 
-  const discount = calculateDiscountAmount(coupon, subtotal);
+  const eligibleItems = await resolveEligibleItems(coupon, cartItems);
+  if (!eligibleItems.length) {
+    const error = new Error('Coupon is not applicable to cart items');
+    error.statusCode = 400;
+    throw error;
+  }
 
-  return {
-    coupon,
-    discount,
-  };
+  const eligibleSubtotal = sumItems(eligibleItems);
+  const discount = calculateDiscountAmount(coupon, eligibleSubtotal, sumItems(cartItems));
+
+  return { coupon, discount, eligibleSubtotal };
 };
 
+// The limit is re-checked in the same write that increments, so two concurrent
+// checkouts cannot both pass an earlier read and overshoot usageLimit.
 const incrementCouponUsage = async (couponId, session) => {
-  await Coupon.findByIdAndUpdate(
-    couponId,
+  const updated = await Coupon.findOneAndUpdate(
+    {
+      _id: couponId,
+      $or: [{ usageLimit: null }, { $expr: { $lt: ['$usedCount', '$usageLimit'] } }],
+    },
     { $inc: { usedCount: 1 } },
-    { session: session || undefined }
+    { session: session || undefined, new: true }
   );
+
+  if (!updated) {
+    const error = new Error('Coupon usage limit reached');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return updated;
+};
+
+const recordRedemption = async ({ couponId, userId, orderId }, session) => {
+  await CouponRedemption.create([{ couponId, userId, orderId }], { session });
+};
+
+// A cancelled or expired order gives the coupon back rather than burning it.
+const releaseRedemption = async ({ couponId, userId }, session) => {
+  const deleted = await CouponRedemption.findOneAndDelete({ couponId, userId }, { session });
+  if (deleted) {
+    await Coupon.findByIdAndUpdate(couponId, { $inc: { usedCount: -1 } }, { session });
+  }
 };
 
 module.exports = {
   validateCouponForCart,
+  recordRedemption,
+  releaseRedemption,
   calculateDiscountAmount,
   incrementCouponUsage,
   assertCouponIsUsable,

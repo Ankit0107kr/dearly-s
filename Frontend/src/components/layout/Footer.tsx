@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Monogram } from "@/components/ui/Icon";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { brand, footerColumns } from "@/data/site";
 
 export function Footer() {
@@ -15,8 +15,7 @@ export function Footer() {
         <div className="grid gap-10 border-b border-cream/10 pb-10 lg:grid-cols-[1.4fr_2.6fr]">
           <div>
             <div className="flex items-center gap-2">
-              <Monogram className="size-10 border-cream/40 text-cream" />
-              <span className="font-display text-2xl tracking-tight">{brand.name}</span>
+              <BrandLogo tone="cream" className="h-16 w-auto" />
             </div>
             <p className="mt-4 max-w-[38ch] text-sm text-cream/70">
               {brand.tagline} We curate, hand-pack and deliver gifts people actually keep — from
@@ -37,6 +36,7 @@ export function Footer() {
                 <input
                   id="newsletter"
                   type="email"
+                  pattern="[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

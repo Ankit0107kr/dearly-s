@@ -1,4 +1,14 @@
-const JSON_FIELDS = ['variants', 'customizationFields', 'inventory', 'tags', 'images'];
+const JSON_FIELDS = [
+  'variants',
+  'customizationFields',
+  'inventory',
+  'tags',
+  'images',
+  'occasions',
+  'highlights',
+  'specs',
+  'art',
+];
 
 const parseJsonField = (value, fieldName) => {
   if (value === undefined || value === null || value === '') {

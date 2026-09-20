@@ -50,7 +50,7 @@ export function CouponBox() {
         </button>
       </div>
       {couponError && <p className="mt-2 text-2xs text-accent-600">{couponError}</p>}
-      <p className="mt-2 text-2xs text-ink-faint">Try GIFTY10, FESTIVE500 or FIRSTGIFT</p>
+      <p className="mt-2 text-2xs text-ink-faint">Try DEARLY10, FESTIVE500 or FIRSTGIFT</p>
     </form>
   );
 }

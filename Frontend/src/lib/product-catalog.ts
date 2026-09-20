@@ -8,6 +8,8 @@ export type ApiCategoryNode = {
   children?: ApiCategoryNode[];
 };
 
+type ApiTaxonomyRef = { _id: string; name: string; slug: string };
+
 export type ApiProductListItem = {
   _id: string;
   slug: string;
@@ -23,8 +25,22 @@ export type ApiProductListItem = {
   inventory?: { stock?: number };
   customizationFields?: unknown[];
   images?: { url: string; alt?: string }[];
-  category?: { _id: string; name: string; slug: string };
-  subCategory?: { _id: string; name: string; slug: string };
+  category?: ApiTaxonomyRef;
+  subCategory?: ApiTaxonomyRef;
+  occasions?: ApiTaxonomyRef[];
+  badge?: string;
+  deliveryEta?: string;
+  highlights?: string[];
+  specs?: { label: string; value: string }[];
+  art?: { from?: string; to?: string; motif?: string; pattern?: string };
+  variants?: {
+    _id: string;
+    label?: string;
+    swatch?: string;
+    priceDelta?: number;
+    price?: number;
+    stock?: number;
+  }[];
 };
 
 export type ApiProductListResult = {
@@ -69,6 +85,8 @@ export function mapApiProductToProduct(item: ApiProductListItem): Product {
     ? Math.round(item.discountPrice! * 100)
     : mrpPaise;
 
+  const fallbackArt = artFromSlug(item.slug);
+
   return {
     id: item._id,
     slug: item.slug,
@@ -79,39 +97,44 @@ export function mapApiProductToProduct(item: ApiProductListItem): Product {
     compareAt: hasDiscount ? mrpPaise : undefined,
     categoryId: item.category?._id ?? "",
     subcategoryId: item.subCategory?._id ?? item.category?._id ?? "",
-    occasionIds: [],
+    occasionIds: (item.occasions ?? []).map((o) => o._id),
     tags: item.tags ?? [],
     rating: item.rating ?? 0,
     reviewCount: item.reviewCount ?? 0,
     stock: item.inventory?.stock ?? 0,
-    badge: item.isFeatured ? "Featured" : undefined,
-    art: artFromSlug(item.slug),
-    highlights: [],
-    specs: [],
+    badge: item.badge || (item.isFeatured ? "Featured" : undefined),
+    art: {
+      from: item.art?.from || fallbackArt.from,
+      to: item.art?.to || fallbackArt.to,
+      motif: item.art?.motif || fallbackArt.motif,
+      pattern: (item.art?.pattern as ProductArt["pattern"]) || fallbackArt.pattern,
+    },
+    variants: item.variants?.length
+      ? item.variants.map((v) => ({
+          id: v._id,
+          label: v.label || "Option",
+          swatch: v.swatch,
+          priceDelta: v.priceDelta ? Math.round(v.priceDelta * 100) : undefined,
+        }))
+      : undefined,
+    highlights: item.highlights ?? [],
+    specs: item.specs ?? [],
     personalisable: (item.customizationFields?.length ?? 0) > 0,
-    deliveryEta: "3–5 days",
+    deliveryEta: item.deliveryEta || "3–5 days",
     image: item.images?.[0]?.url,
+    images: (item.images ?? []).map((i) => i.url).filter(Boolean),
   };
 }
 
-export function catalogQueryToApiParams(
-  query: CatalogQuery,
-  tree: ApiCategoryNode[],
-): string {
+export function catalogQueryToApiParams(query: CatalogQuery): string {
   const params = new URLSearchParams();
   params.set("limit", "100");
 
   if (query.q) params.set("search", query.q);
-
-  const subId = query.subcategory
-    ? findCategoryIdBySlug(tree, query.subcategory)
-    : undefined;
-  const catId = query.category
-    ? findCategoryIdBySlug(tree, query.category)
-    : undefined;
-
-  if (subId) params.set("subCategory", subId);
-  else if (catId) params.set("category", catId);
+  if (query.subcategory) params.set("subCategory", query.subcategory);
+  else if (query.category) params.set("category", query.category);
+  if (query.occasion) params.set("occasion", query.occasion);
+  if (query.personalised) params.set("personalised", "true");
 
   if (query.min != null) params.set("minPrice", String(query.min / 100));
   if (query.max != null) params.set("maxPrice", String(query.max / 100));
@@ -129,36 +152,11 @@ export function catalogQueryToApiParams(
     case "newest":
       params.set("sort", "newest");
       break;
-    case "featured":
-      break;
     default:
       break;
   }
 
   return params.toString();
-}
-
-/** Filters the API does not support yet (occasion facets, etc.). */
-export function applyCatalogClientFilters(
-  items: Product[],
-  query: CatalogQuery,
-): Product[] {
-  let result = items;
-
-  if (query.personalised) {
-    result = result.filter((p) => p.personalisable);
-  }
-
-  if (query.occasion) {
-    const needle = query.occasion.replace(/-/g, " ").toLowerCase();
-    result = result.filter(
-      (p) =>
-        p.tags.some((t) => t.toLowerCase().includes(needle)) ||
-        p.name.toLowerCase().includes(needle),
-    );
-  }
-
-  return result;
 }
 
 /** Client sort when the API has no matching sort (e.g. “featured” = boost, not filter). */
