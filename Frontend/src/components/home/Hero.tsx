@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { heroSlides } from "@/data/site";
+import { heroSlides as fallbackSlides } from "@/data/site";
+import type { Banner } from "@/lib/banners";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 const AUTOPLAY_MS = 7000;
@@ -12,14 +13,16 @@ const AUTOPLAY_MS = 7000;
  * One full-bleed banner, not a split layout. The whole panel is a link through
  * to a filtered product list; the arrows sit above it so they stay clickable.
  */
-export function Hero() {
+export function Hero({ banners = [] }: { banners?: Banner[] }) {
+  const heroSlides = banners.length ? banners : fallbackSlides;
+  const slideCount = heroSlides.length;
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const slide = heroSlides[index];
 
   const go = useCallback(
-    (next: number) => setIndex((next + heroSlides.length) % heroSlides.length),
-    [],
+    (next: number) => setIndex((next + slideCount) % slideCount),
+    [slideCount],
   );
 
   useEffect(() => {
@@ -103,12 +106,14 @@ export function Hero() {
                 {slide.cta.label}
                 <span aria-hidden><ArrowRight className="size-4" strokeWidth={1.5} aria-hidden /></span>
               </span>
-              <Link
-                href={slide.altCta.href}
-                className="link-sweep pointer-events-auto relative z-30 text-2xs font-semibold tracking-[0.18em] text-cream uppercase"
-              >
-                {slide.altCta.label}
-              </Link>
+              {slide.altCta && (
+                <Link
+                  href={slide.altCta.href}
+                  className="link-sweep pointer-events-auto relative z-30 text-2xs font-semibold tracking-[0.18em] text-cream uppercase"
+                >
+                  {slide.altCta.label}
+                </Link>
+              )}
             </div>
           </div>
         </div>

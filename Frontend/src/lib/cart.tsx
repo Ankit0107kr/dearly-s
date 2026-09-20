@@ -12,7 +12,7 @@ import { productById } from "@/data/products";
 import { coupons, freeShippingThreshold, shippingMethods, taxRate } from "@/data/site";
 import type { CartLine, CartLineView, OrderSummary, Product } from "@/lib/types";
 
-const STORAGE_KEY = "gifty.cart.v2";
+const STORAGE_KEY = "dearlys.cart.v1";
 
 type State = {
   lines: CartLine[];

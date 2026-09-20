@@ -1,8 +1,9 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { slugify, pickDefined } = require('../utils/helpers');
 const { uploadBufferToCloudinary, deleteCloudinaryAsset } = require('../utils/upload');
-const { CUSTOMIZATION_FIELD_TYPES } = require('../utils/constants');
+const { CUSTOMIZATION_FIELD_TYPES, TAXONOMY_KINDS } = require('../utils/constants');
 
 const getUnitPrice = (product, variant) => {
   if (variant && variant.price != null) {
@@ -36,7 +37,22 @@ const validateCustomizationInput = (product, customization = []) => {
   }
 };
 
-const buildProductListQuery = (query) => {
+// Filters accept either an ObjectId or a slug, so the client can filter straight
+// from the URL without first fetching the taxonomy to translate slugs into ids.
+const resolveTaxonomyId = async (value, kind) => {
+  if (!value) {
+    return undefined;
+  }
+  if (mongoose.isValidObjectId(value)) {
+    return value;
+  }
+  const match = await Category.findOne({ slug: String(value).toLowerCase(), kind }).select('_id');
+  return match?._id || null;
+};
+
+const NO_MATCH = new mongoose.Types.ObjectId('000000000000000000000000');
+
+const buildProductListQuery = async (query) => {
   const filter = { isActive: true };
   const options = {
     page: Math.max(1, Number(query.page) || 1),
@@ -48,18 +64,44 @@ const buildProductListQuery = (query) => {
     filter.$text = { $search: query.search };
   }
 
-  if (query.category) {
-    filter.category = query.category;
+  const [categoryId, subCategoryId, occasionId] = await Promise.all([
+    resolveTaxonomyId(query.category, TAXONOMY_KINDS.CATEGORY),
+    resolveTaxonomyId(query.subCategory, TAXONOMY_KINDS.CATEGORY),
+    resolveTaxonomyId(query.occasion, TAXONOMY_KINDS.OCCASION),
+  ]);
+
+  if (subCategoryId !== undefined) {
+    filter.subCategory = subCategoryId || NO_MATCH;
+  } else if (categoryId !== undefined) {
+    // A parent category also matches products filed only under one of its children.
+    const childIds = categoryId ? await Category.find({ parentCategory: categoryId }).distinct('_id') : [];
+    filter.$or = [{ category: categoryId || NO_MATCH }, { subCategory: { $in: childIds } }];
   }
 
-  if (query.subCategory) {
-    filter.subCategory = query.subCategory;
+  if (occasionId !== undefined) {
+    filter.occasions = occasionId || NO_MATCH;
+  }
+
+  if (query.personalised === 'true' || query.personalised === true) {
+    filter['customizationFields.0'] = { $exists: true };
+  }
+
+  if (query.onSale === 'true' || query.onSale === true) {
+    filter.discountPrice = { $ne: null };
+    filter.$expr = { $lt: ['$discountPrice', '$price'] };
+  }
+
+  if (query.tags) {
+    const tags = String(query.tags).split(',').map((tag) => tag.trim().toLowerCase()).filter(Boolean);
+    if (tags.length) {
+      filter.tags = { $in: tags };
+    }
   }
 
   if (query.minPrice || query.maxPrice) {
-    filter.price = {};
-    if (query.minPrice) filter.price.$gte = Number(query.minPrice);
-    if (query.maxPrice) filter.price.$lte = Number(query.maxPrice);
+    filter.effectivePrice = {};
+    if (query.minPrice) filter.effectivePrice.$gte = Number(query.minPrice);
+    if (query.maxPrice) filter.effectivePrice.$lte = Number(query.maxPrice);
   }
 
   if (query.rating) {
@@ -72,10 +114,10 @@ const buildProductListQuery = (query) => {
 
   switch (query.sort) {
     case 'price_asc':
-      options.sort = { price: 1 };
+      options.sort = { effectivePrice: 1 };
       break;
     case 'price_desc':
-      options.sort = { price: -1 };
+      options.sort = { effectivePrice: -1 };
       break;
     case 'rating_desc':
       options.sort = { rating: -1 };
@@ -91,13 +133,14 @@ const buildProductListQuery = (query) => {
 };
 
 const listProducts = async (query) => {
-  const { filter, options } = buildProductListQuery(query);
+  const { filter, options } = await buildProductListQuery(query);
   const skip = (options.page - 1) * options.limit;
 
   const [items, total] = await Promise.all([
     Product.find(filter)
       .populate('category', 'name slug')
       .populate('subCategory', 'name slug')
+      .populate('occasions', 'name slug')
       .sort(options.sort)
       .skip(skip)
       .limit(options.limit),
@@ -149,7 +192,8 @@ const listAdminProducts = async (query) => {
 const getProductById = async (id) => {
   const product = await Product.findOne({ _id: id, isActive: true })
     .populate('category', 'name slug')
-    .populate('subCategory', 'name slug');
+    .populate('subCategory', 'name slug')
+    .populate('occasions', 'name slug');
 
   if (!product) {
     const error = new Error('Product not found');
@@ -163,7 +207,8 @@ const getProductById = async (id) => {
 const getProductBySlug = async (slug) => {
   const product = await Product.findOne({ slug: slug.toLowerCase(), isActive: true })
     .populate('category', 'name slug')
-    .populate('subCategory', 'name slug');
+    .populate('subCategory', 'name slug')
+    .populate('occasions', 'name slug');
 
   if (!product) {
     const error = new Error('Product not found');
@@ -178,7 +223,9 @@ const getFeaturedProducts = async (limit = 12) =>
   Product.find({ isActive: true, isFeatured: true })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate('category', 'name slug');
+    .populate('category', 'name slug')
+    .populate('subCategory', 'name slug')
+    .populate('occasions', 'name slug');
 
 const getProductsByCategory = async (categoryId, query) =>
   listProducts({ ...query, category: categoryId });
@@ -258,6 +305,16 @@ const createProduct = async (payload, files = []) => {
   }
 };
 
+// reservedStock and variant _ids are server-owned: a payload that omits them must
+// not free held stock or orphan the variantId stored on carts and orders.
+const mergeVariants = (existing = [], incoming = []) => {
+  const byId = new Map(existing.map((variant) => [variant._id.toString(), variant.toObject()]));
+  return incoming.map((variant) => {
+    const previous = variant._id ? byId.get(variant._id.toString()) : null;
+    return previous ? { ...previous, ...variant, _id: previous._id } : variant;
+  });
+};
+
 const updateProduct = async (id, payload, files = []) => {
   const product = await Product.findById(id);
   if (!product) {
@@ -276,6 +333,18 @@ const updateProduct = async (id, payload, files = []) => {
   if (files.length) {
     const uploaded = await uploadImages(files);
     updates.images = [...(product.images || []), ...uploaded];
+  }
+
+  if (updates.variants) {
+    updates.variants = mergeVariants(product.variants, updates.variants);
+  }
+
+  if (updates.inventory) {
+    updates.inventory = {
+      ...(product.inventory?.toObject?.() || {}),
+      ...updates.inventory,
+      reservedStock: product.inventory?.reservedStock ?? 0,
+    };
   }
 
   Object.assign(product, updates);

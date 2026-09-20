@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OrderSummaryCard } from "@/components/checkout/OrderSummaryCard";
 import { brand, shippingMethods } from "@/data/site";
 import { useCart } from "@/lib/cart";
@@ -10,15 +10,37 @@ import { formatMoney } from "@/lib/money";
 import {
   loadRazorpayScript,
   openRazorpay,
-  ORDER_STORAGE_KEY,
-  type PlacedOrder,
   type RazorpaySuccess,
 } from "@/lib/razorpay-client";
+import { newIdempotencyKey, placeOrder, toDeliveryType } from "@/lib/checkout";
+import { paymentApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type { Address } from "@/lib/types";
+import { lookupPincode } from "@/lib/pincode";
+import {
+  digitsOnly,
+  lettersOnly,
+  validateAll,
+  validateEmail,
+  validateName,
+  validatePhone,
+  validatePincode,
+  validateRequired,
+  type Validator,
+} from "@/lib/validation";
 import { Motif } from "@/components/ui/Motif";
 
 const steps = ["Details", "Delivery", "Payment"] as const;
 type Step = (typeof steps)[number];
+
+const DELIVERY_SLOTS = ["09:00 – 13:00", "13:00 – 17:00", "17:00 – 21:00"] as const;
+
+/** Scheduled delivery needs a date; the backend rejects anything in the past. */
+const earliestDeliveryDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
 
 const emptyAddress: Address = {
   fullName: "",
@@ -51,100 +73,104 @@ function Field({
   );
 }
 
+const DETAIL_RULES: Record<string, Validator> = {
+  fullName: validateName("Full name"),
+  email: validateEmail,
+  phone: validatePhone(),
+  line1: validateRequired("Street address"),
+  city: validateRequired("City"),
+  state: validateRequired("State"),
+  pincode: validatePincode,
+};
+
 export function CheckoutFlow() {
   const router = useRouter();
   const { lines, summary, couponCode, shippingMethodId, setShipping, clear, hydrated } = useCart();
+  const { user, loading: authLoading } = useAuth();
 
   const [step, setStep] = useState<Step>("Details");
   const [address, setAddress] = useState<Address>(emptyAddress);
   const [errors, setErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [paying, setPaying] = useState(false);
+  const pinAbort = useRef<AbortController | null>(null);
+
+  useEffect(() => () => pinAbort.current?.abort(), []);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliverySlot, setDeliverySlot] = useState<string>(DELIVERY_SLOTS[0]);
 
   const method = useMemo(
     () => shippingMethods.find((s) => s.id === shippingMethodId) ?? shippingMethods[0],
     [shippingMethodId],
   );
+  const requiresSchedule = toDeliveryType(shippingMethodId) === "SCHEDULED";
 
   const set = (key: keyof Address) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddress((a) => ({ ...a, [key]: e.target.value }));
+    const raw = e.target.value;
+    const value =
+      key === "fullName" ? lettersOnly(raw)
+      : key === "phone" ? digitsOnly(raw, 10)
+      : raw;
+    setAddress((a) => ({ ...a, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  // Six digits is the whole pincode, so the lookup fires without a button.
+  const onPincode = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = digitsOnly(e.target.value, 6);
+    setAddress((a) => ({ ...a, pincode: value }));
+    setErrors((prev) => ({ ...prev, pincode: undefined }));
+    pinAbort.current?.abort();
+    if (value.length !== 6) return;
+    const ctrl = new AbortController();
+    pinAbort.current = ctrl;
+    lookupPincode(value, ctrl.signal)
+      .then((hit) => {
+        if (!hit || ctrl.signal.aborted) return;
+        setAddress((a) => ({ ...a, city: hit.city, state: hit.state }));
+        setErrors((prev) => ({ ...prev, city: undefined, state: undefined }));
+      })
+      .catch(() => {
+        /* third-party lookup — the customer can still type city and state */
+      });
+  };
+
   const validateDetails = () => {
-    const next: Partial<Record<keyof Address, string>> = {};
-    if (address.fullName.trim().length < 2) next.fullName = "Tell us who this is from.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.email)) next.email = "Enter a valid email.";
-    if (!/^[6-9]\d{9}$/.test(address.phone.replace(/\s/g, "")))
-      next.phone = "Enter a 10-digit Indian mobile number.";
-    if (address.line1.trim().length < 4) next.line1 = "Street address is required.";
-    if (address.city.trim().length < 2) next.city = "City is required.";
-    if (address.state.trim().length < 2) next.state = "State is required.";
-    if (!/^\d{6}$/.test(address.pincode.trim())) next.pincode = "Enter a 6-digit PIN code.";
-    setErrors(next);
+    const next = validateAll(address as unknown as Record<string, string>, DETAIL_RULES);
+    setErrors(next as Partial<Record<keyof Address, string>>);
     return Object.keys(next).length === 0;
   };
 
-  const persistOrder = (order: PlacedOrder) => {
-    try {
-      window.sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(order));
-    } catch {
-      /* session storage unavailable — the success page falls back to a generic note */
-    }
-  };
-
-  const buildOrder = (
-    reference: string,
-    paymentId: string | null,
-    demo: boolean,
-  ): PlacedOrder => ({
-    reference,
-    paymentId,
-    demo,
-    total: summary.total,
-    email: address.email,
-    fullName: address.fullName,
-    address: [address.line1, address.line2, address.city, address.state, address.pincode]
-      .filter(Boolean)
-      .join(", "),
-    shippingLabel: method.name,
-    eta: method.eta,
-    items: lines.map((l) => ({
-      name: l.variant ? `${l.product.name} — ${l.variant.label}` : l.product.name,
-      quantity: l.quantity,
-      total: l.lineTotal,
-    })),
-    placedAt: new Date().toISOString(),
-  });
+  const detailsComplete =
+    Object.keys(validateAll(address as unknown as Record<string, string>, DETAIL_RULES)).length === 0;
 
   const pay = async () => {
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent("/checkout")}`);
+      return;
+    }
+
     setPaying(true);
     setPaymentError(null);
 
     try {
-      const response = await fetch("/api/razorpay/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lines: lines.map((l) => ({
-            productId: l.productId,
-            variantId: l.variantId,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-          })),
-          couponCode,
-          shippingMethodId,
-        }),
+      // The server reprices the cart from its own catalogue and returns the
+      // authoritative total; nothing the browser computed is trusted here.
+      const { order, payment } = await placeOrder({
+        lines,
+        address,
+        couponCode,
+        shippingMethodId,
+        ...(requiresSchedule ? { deliveryDate, deliverySlot } : {}),
+        idempotencyKey: newIdempotencyKey(),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not start the payment.");
+      const reference = order.orderNumber ?? order._id;
 
-      // Demo mode: no merchant keys yet, so complete the flow without a charge.
-      if (data.demo) {
-        persistOrder(buildOrder(data.orderId, null, true));
+      // No merchant keys yet: the order exists and waits on payment.
+      if (!payment || !payment.providerConfigured) {
         clear();
-        router.push("/checkout/success");
+        router.push(`/checkout/success?order=${order._id}`);
         return;
       }
 
@@ -152,38 +178,33 @@ export function CheckoutFlow() {
       if (!ready) throw new Error("Could not load the payment gateway. Check your connection.");
 
       openRazorpay({
-        key: data.keyId,
-        amount: data.amount,
-        currency: data.currency,
+        key: payment.keyId,
+        amount: Math.round(payment.amount * 100),
+        currency: payment.currency,
         name: brand.name,
-        description: `${lines.length} item${lines.length === 1 ? "" : "s"}`,
-        order_id: data.orderId,
+        description: `Order ${reference}`,
+        order_id: payment.razorpayOrderId,
         prefill: {
           name: address.fullName,
           email: address.email,
           contact: address.phone,
         },
-        notes: { address: address.line1, pincode: address.pincode },
-        theme: { color: "#dd2360" },
+        notes: { orderNumber: reference },
+        theme: { color: "#7a5ad6" },
         modal: { ondismiss: () => setPaying(false) },
         handler: async (payload: RazorpaySuccess) => {
           try {
-            const verifyResponse = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const verification = await verifyResponse.json();
-            if (!verifyResponse.ok || !verification.verified) {
-              throw new Error(verification.error ?? "We could not verify that payment.");
-            }
-            persistOrder(buildOrder(payload.razorpay_order_id, payload.razorpay_payment_id, false));
+            // Verified server-side: the signature is checked against the key
+            // secret, which never reaches the browser.
+            await paymentApi.verify(payload);
             clear();
-            router.push("/checkout/success");
+            router.push(`/checkout/success?order=${order._id}`);
           } catch (error) {
             setPaying(false);
             setPaymentError(
-              error instanceof Error ? error.message : "Payment verification failed.",
+              error instanceof Error
+                ? `${error.message} If you were charged, the payment will be confirmed automatically.`
+                : "Payment verification failed.",
             );
           }
         },
@@ -295,7 +316,7 @@ export function CheckoutFlow() {
                   label="PIN code"
                   inputMode="numeric"
                   value={address.pincode}
-                  onChange={set("pincode")}
+                  onChange={onPincode}
                   error={errors.pincode}
                   autoComplete="postal-code"
                   placeholder="560001"
@@ -337,7 +358,10 @@ export function CheckoutFlow() {
 
               <button
                 type="submit"
-                className="mt-2 w-full rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft sm:w-fit"
+                disabled={!detailsComplete}
+                aria-disabled={!detailsComplete}
+                title={detailsComplete ? undefined : "Fill in every field above to continue"}
+                className="mt-2 w-full rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:gradient-accent sm:w-fit"
               >
                 Continue to delivery →
               </button>
@@ -388,6 +412,40 @@ export function CheckoutFlow() {
                 })}
               </fieldset>
 
+              {/* SCHEDULED orders are rejected without a date and slot. */}
+              {requiresSchedule && (
+                <div className="grid gap-4 rounded-md border border-ink/12 bg-cream p-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className="text-2xs font-bold tracking-[0.12em] text-ink-soft uppercase">
+                      Delivery date
+                    </span>
+                    <input
+                      type="date"
+                      value={deliveryDate}
+                      min={earliestDeliveryDate()}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      className="rounded-md border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-2xs font-bold tracking-[0.12em] text-ink-soft uppercase">
+                      Time slot
+                    </span>
+                    <select
+                      value={deliverySlot}
+                      onChange={(e) => setDeliverySlot(e.target.value)}
+                      className="rounded-md border border-ink/12 bg-white px-4 py-3 text-sm outline-none focus:border-ink"
+                    >
+                      {DELIVERY_SLOTS.map((slot) => (
+                        <option key={slot} value={slot}>
+                          {slot}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
@@ -399,9 +457,10 @@ export function CheckoutFlow() {
                 <button
                   type="button"
                   onClick={() => setStep("Payment")}
-                  className="rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft"
+                  disabled={requiresSchedule && !deliveryDate}
+                  className="rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-cream transition hover:gradient-accent-soft disabled:opacity-60"
                 >
-                  Continue to payment →
+                  {requiresSchedule && !deliveryDate ? "Pick a delivery date" : "Continue to payment →"}
                 </button>
               </div>
             </div>
@@ -488,15 +547,28 @@ export function CheckoutFlow() {
                 <button
                   type="button"
                   onClick={pay}
-                  disabled={paying}
+                  disabled={paying || authLoading}
                   className="flex-1 rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60 sm:flex-none"
                 >
-                  {paying ? "Opening Razorpay…" : `Pay ${formatMoney(summary.total)} securely`}
+                  {paying
+                    ? "Opening Razorpay…"
+                    : user
+                      ? `Pay ${formatMoney(summary.total)} securely`
+                      : "Sign in to pay"}
                 </button>
               </div>
 
+              {/* Orders are created against an account, so say so before the form is filled. */}
+              {!authLoading && !user && (
+                <p className="text-2xs text-ink-soft">
+                  You&rsquo;ll be asked to sign in — your order and its history are saved to your
+                  account.
+                </p>
+              )}
+
               <p className="text-2xs text-ink-faint">
-                256-bit encrypted. By paying you accept our terms and the 14-day returns policy.
+                The final total is confirmed by our server before payment. 256-bit encrypted. By
+                paying you accept our terms and the 14-day returns policy.
               </p>
             </div>
           )}

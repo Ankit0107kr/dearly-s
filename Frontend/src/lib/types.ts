@@ -38,6 +38,8 @@ export type Product = {
   deliveryEta: string;
   /** Cloudinary / CDN URL when loaded from the API. */
   image?: string;
+  /** Every image on the product, in order; empty falls back to generated art. */
+  images?: string[];
 };
 
 export type Subcategory = {

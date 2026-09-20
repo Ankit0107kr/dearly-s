@@ -1,10 +1,14 @@
 const crypto = require('crypto');
 const Payment = require('../models/Payment');
-const Order = require('../models/Order');
 const { env } = require('../config/env');
 const { getRazorpayClient, isRazorpayConfigured } = require('../config/razorpay');
-const { PAYMENT_STATUS, PAYMENT_PROVIDERS, ORDER_STATUS } = require('../utils/constants');
+const { PAYMENT_STATUS, PAYMENT_PROVIDERS } = require('../utils/constants');
+const { toPaise } = require('../utils/money');
 const orderService = require('./order.service');
+const reservationService = require('./reservation.service');
+const emailService = require('./email.service');
+const User = require('../models/User');
+const logger = require('../config/logger');
 const mongoose = require('mongoose');
 
 const createPaymentOrder = async ({ order, userId }) => {
@@ -19,7 +23,7 @@ const createPaymentOrder = async ({ order, userId }) => {
   }
 
   const razorpay = getRazorpayClient();
-  const amountPaise = Math.round(order.totalAmount * 100);
+  const amountPaise = toPaise(order.totalAmount);
 
   const razorpayOrder = await razorpay.orders.create({
     amount: amountPaise,
@@ -51,6 +55,18 @@ const createPaymentOrder = async ({ order, userId }) => {
     paymentId: payment._id,
     razorpayOrderId: razorpayOrder.id,
   };
+};
+
+// Sent after commit: a failed mailer must never roll back a captured payment.
+const notifyOrderPaid = async (order) => {
+  try {
+    const user = await User.findById(order.userId);
+    if (user) {
+      await emailService.sendOrderConfirmationEmail(user, order);
+    }
+  } catch (error) {
+    logger.error({ err: error, orderId: order._id }, 'Order confirmation email failed');
+  }
 };
 
 const verifyRazorpaySignature = ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
@@ -98,6 +114,7 @@ const verifyPayment = async (userId, payload) => {
 
     const order = await orderService.markOrderPaid(payment.orderId, session);
     await session.commitTransaction();
+    await notifyOrderPaid(order);
 
     return { payment, order };
   } catch (error) {
@@ -105,6 +122,45 @@ const verifyPayment = async (userId, payload) => {
     throw error;
   } finally {
     session.endSession();
+  }
+};
+
+/**
+ * Returns the money for an order that has already been marked refunded in the
+ * database. Called after the transaction commits: a gateway call inside a
+ * transaction would hold it open across the network and cannot be rolled back.
+ * A failure here leaves the order refunded but the money unmoved, so it is
+ * logged loudly for manual follow-up rather than swallowed.
+ */
+const refundOrderPayment = async (orderId) => {
+  const payment = await Payment.findOne({ orderId, status: PAYMENT_STATUS.PAID });
+  if (!payment?.paymentId) {
+    return null;
+  }
+
+  if (!isRazorpayConfigured()) {
+    logger.warn({ orderId }, 'Refund skipped: Razorpay is not configured');
+    return null;
+  }
+
+  try {
+    const refund = await getRazorpayClient().payments.refund(payment.paymentId, {
+      amount: toPaise(payment.amount),
+      speed: 'normal',
+      notes: { orderId: String(orderId) },
+    });
+
+    payment.status = PAYMENT_STATUS.REFUNDED;
+    payment.rawResponse = refund;
+    await payment.save();
+    logger.info({ orderId, refundId: refund.id }, 'Refund issued');
+    return refund;
+  } catch (error) {
+    logger.error(
+      { err: error, orderId, paymentId: payment.paymentId },
+      'REFUND FAILED — order is marked refunded but the money was not returned'
+    );
+    return null;
   }
 };
 
@@ -139,8 +195,9 @@ const handleWebhook = async (rawBody, signature) => {
         payment.method = paymentEntity.method;
         payment.rawResponse = paymentEntity;
         await payment.save({ session });
-        await orderService.markOrderPaid(payment.orderId, session);
+        const order = await orderService.markOrderPaid(payment.orderId, session);
         await session.commitTransaction();
+        await notifyOrderPaid(order);
       } catch (error) {
         await session.abortTransaction();
         throw error;
@@ -160,10 +217,9 @@ const handleWebhook = async (rawBody, signature) => {
         rawResponse: paymentEntity,
       }
     );
-    await Order.findOneAndUpdate(
-      { _id: paymentEntity.notes?.orderId },
-      { paymentStatus: PAYMENT_STATUS.FAILED, orderStatus: ORDER_STATUS.FAILED }
-    );
+    if (paymentEntity.notes?.orderId) {
+      await reservationService.failOrderAndRelease(paymentEntity.notes.orderId);
+    }
   }
 
   return { received: true };
@@ -171,6 +227,7 @@ const handleWebhook = async (rawBody, signature) => {
 
 module.exports = {
   createPaymentOrder,
+  refundOrderPayment,
   verifyPayment,
   handleWebhook,
 };

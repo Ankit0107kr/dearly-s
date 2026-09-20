@@ -7,6 +7,12 @@ const formatter = new Intl.NumberFormat("en-IN", {
 
 export const formatMoney = (paise: number) => formatter.format(paise / 100);
 
+/**
+ * The one exception to the paise rule: the backend stores order, cart and
+ * product amounts as whole rupees, so API values are formatted as-is.
+ */
+export const formatRupees = (rupees: number) => formatter.format(rupees);
+
 export const formatMoneyExact = (paise: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -18,3 +24,16 @@ export const discountPercent = (price: number, compareAt?: number) =>
   compareAt && compareAt > price
     ? Math.round(((compareAt - price) / compareAt) * 100)
     : 0;
+
+/**
+ * Exact rupees, paise included. Tax makes order totals land on fractions, so a
+ * confirmation or invoice must show what is actually charged, not a rounded
+ * figure the customer can compare against their bank statement and disagree with.
+ */
+export const formatRupeesExact = (rupees: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(rupees);

@@ -3,7 +3,6 @@ const { DISCOUNT_TYPES, DELIVERY_TYPES } = require('../utils/constants');
 
 const validateCouponSchema = Joi.object({
   code: Joi.string().trim().uppercase().required(),
-  subtotal: Joi.number().min(0).optional(),
 });
 
 const createCouponSchema = Joi.object({
@@ -11,7 +10,13 @@ const createCouponSchema = Joi.object({
   discountType: Joi.string()
     .valid(...Object.values(DISCOUNT_TYPES))
     .required(),
-  discountValue: Joi.number().min(0).required(),
+  discountValue: Joi.number()
+    .min(0)
+    .when('discountType', {
+      is: DISCOUNT_TYPES.PERCENTAGE,
+      then: Joi.number().max(100),
+    })
+    .required(),
   minimumAmount: Joi.number().min(0).default(0),
   maximumDiscount: Joi.number().min(0).optional(),
   startDate: Joi.date().required(),

@@ -2,17 +2,19 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const productService = require('./product.service');
 const inventoryService = require('./inventory.service');
+const { round2 } = require('../utils/money');
 
 const recalculateCartTotal = (cart) => {
-  cart.totalAmount = cart.items.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0
+  cart.totalAmount = round2(
+    cart.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   );
   return cart;
 };
 
+// Deliberately unpopulated: the write paths compare item.productId by id, and a
+// populated document's toString() is its inspect output, not the id.
 const getOrCreateCart = async (userId) => {
-  let cart = await Cart.findOne({ userId }).populate('items.productId');
+  let cart = await Cart.findOne({ userId });
   if (!cart) {
     cart = await Cart.create({ userId, items: [], totalAmount: 0 });
   }
@@ -51,7 +53,10 @@ const resolveCartItemPricing = async ({ productId, variantId, quantity, customiz
   };
 };
 
-const getCart = async (userId) => getOrCreateCart(userId);
+const getCart = async (userId) => {
+  const cart = await getOrCreateCart(userId);
+  return cart.populate('items.productId');
+};
 
 const addCartItem = async (userId, payload) => {
   const cart = await getOrCreateCart(userId);

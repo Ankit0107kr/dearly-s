@@ -1,11 +1,14 @@
 const orderService = require('../services/order.service');
 const { asyncHandler } = require('../utils/helpers');
 const { sendSuccess } = require('../utils/response');
-const { ORDER_STATUS } = require('../utils/constants');
 const Order = require('../models/Order');
 
 const createOrder = asyncHandler(async (req, res) => {
-  const result = await orderService.createOrderFromCart(req.user._id, req.body);
+  const result = await orderService.createOrderFromCart(
+    req.user._id,
+    req.body,
+    req.headers['idempotency-key']
+  );
   return sendSuccess(res, {
     statusCode: 201,
     message: 'Order created successfully',
@@ -44,6 +47,21 @@ const adminListOrders = asyncHandler(async (req, res) => {
   const filter = {};
   if (req.query.orderStatus) filter.orderStatus = req.query.orderStatus;
   if (req.query.paymentStatus) filter.paymentStatus = req.query.paymentStatus;
+  if (req.query.fromDate || req.query.toDate) {
+    filter.createdAt = {};
+    if (req.query.fromDate) {
+      const from = new Date(req.query.fromDate);
+      if (!Number.isNaN(from.getTime())) filter.createdAt.$gte = from;
+    }
+    if (req.query.toDate) {
+      const to = new Date(req.query.toDate);
+      if (!Number.isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = to;
+      }
+    }
+    if (!Object.keys(filter.createdAt).length) delete filter.createdAt;
+  }
 
   const [items, total] = await Promise.all([
     Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('userId', 'firstName lastName email'),
@@ -60,24 +78,10 @@ const adminListOrders = asyncHandler(async (req, res) => {
 });
 
 const adminUpdateOrderStatus = asyncHandler(async (req, res) => {
-  const { orderStatus } = req.body;
-  if (!Object.values(ORDER_STATUS).includes(orderStatus)) {
-    const error = new Error('Invalid order status');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const order = await Order.findByIdAndUpdate(
-    req.params.id,
-    { orderStatus },
-    { new: true }
-  );
-
-  if (!order) {
-    const error = new Error('Order not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  const order = await orderService.updateOrderStatus(req.params.id, req.body.orderStatus, {
+    adminId: req.user._id,
+    note: req.body.note,
+  });
 
   return sendSuccess(res, {
     message: 'Order status updated',

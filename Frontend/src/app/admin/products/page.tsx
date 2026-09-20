@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adminApi, catalogApi } from "@/lib/api";
+import {
+  LIMITS,
+  decimalOnly,
+  digitsOnly,
+  validateAll,
+  validateAmount,
+  validateInteger,
+  validateRequired,
+} from "@/lib/validation";
 import { formatInr } from "@/lib/admin-constants";
 
 type CategoryNode = {
@@ -28,6 +37,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [images, setImages] = useState<FileList | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
@@ -79,6 +89,31 @@ export default function AdminProductsPage() {
     e.preventDefault();
     setMessage("");
     setError("");
+
+    const found = validateAll(
+      {
+        name: form.name,
+        category: form.category,
+        price: form.price,
+        discountPrice: form.discountPrice,
+        stock: form.stock,
+      },
+      {
+        name: validateRequired("Name", 160),
+        category: validateRequired("Category"),
+        price: validateAmount("Price", { min: 1 }),
+        discountPrice: validateAmount("Discount price", { min: 0, required: false }),
+        stock: validateInteger("Stock", { min: 0, max: LIMITS.stockMax }),
+      },
+    ) as Record<string, string>;
+    if (form.discountPrice && Number(form.discountPrice) >= Number(form.price)) {
+      found.discountPrice = "Discount price must be below the price";
+    }
+    setFieldErrors(found);
+    if (Object.keys(found).length) {
+      setError("Fix the highlighted fields");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", form.name.trim());
@@ -190,16 +225,16 @@ export default function AdminProductsPage() {
               min={0}
               placeholder="Price (INR)"
               value={form.price}
-              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-              className="rounded-md border border-line bg-white px-3 py-2 text-sm"
+              onChange={(e) => setForm((f) => ({ ...f, price: decimalOnly(e.target.value) }))}
+              className={`rounded-md border bg-white px-3 py-2 text-sm ${fieldErrors.price ? "border-red-400" : "border-line"}`}
             />
             <input
               type="number"
               min={0}
               placeholder="Discount price"
               value={form.discountPrice}
-              onChange={(e) => setForm((f) => ({ ...f, discountPrice: e.target.value }))}
-              className="rounded-md border border-line bg-white px-3 py-2 text-sm"
+              onChange={(e) => setForm((f) => ({ ...f, discountPrice: decimalOnly(e.target.value) }))}
+              className={`rounded-md border bg-white px-3 py-2 text-sm ${fieldErrors.discountPrice ? "border-red-400" : "border-line"}`}
             />
           </div>
           <input
@@ -207,8 +242,8 @@ export default function AdminProductsPage() {
             min={0}
             placeholder="Stock"
             value={form.stock}
-            onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-            className="rounded-md border border-line bg-white px-3 py-2 text-sm"
+            onChange={(e) => setForm((f) => ({ ...f, stock: digitsOnly(e.target.value) }))}
+            className={`rounded-md border bg-white px-3 py-2 text-sm ${fieldErrors.stock ? "border-red-400" : "border-line"}`}
           />
           <input
             placeholder="Tags (comma separated)"

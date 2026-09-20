@@ -35,7 +35,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   if (statusCode >= 500) {
-    console.error(err);
+    (req.log || console).error({ err }, 'Unhandled request error');
   }
 
   const body = {
