@@ -649,21 +649,6 @@ export function CheckoutFlow() {
                 </div>
               </div>
 
-              <div className="rounded-md border border-line p-5">
-                <p className="text-2xs font-bold tracking-[0.12em] text-ink-faint uppercase">
-                  Payment methods accepted
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {["UPI", "Credit card", "Debit card", "Netbanking", "Wallets", "EMI"].map((m) => (
-                    <span
-                      key={m}
-                      className="rounded-xs border border-ink/12 bg-white px-4 py-2 text-2xs font-semibold"
-                    >
-                      {m}
-                    </span>
-                  ))}
-                </div>
-              </div>
 
               {paymentError && (
                 <p className="rounded-md border border-accent-600/40 bg-accent-50 px-5 py-4 text-sm text-accent-700">
