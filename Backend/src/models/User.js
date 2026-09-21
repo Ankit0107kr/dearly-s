@@ -28,11 +28,20 @@ const userSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    googleId: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
     password: {
       type: String,
-      required: true,
       minlength: 8,
       select: false,
+      required() {
+        return !this.googleId;
+      },
     },
     role: {
       type: String,
@@ -64,7 +73,7 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre('save', async function hashPassword() {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return;
   }
 
@@ -73,6 +82,9 @@ userSchema.pre('save', async function hashPassword() {
 });
 
 userSchema.methods.comparePassword = async function comparePassword(candidatePassword) {
+  if (!this.password) {
+    return false;
+  }
   return bcrypt.compare(candidatePassword, this.password);
 };
 

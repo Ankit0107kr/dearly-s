@@ -59,6 +59,9 @@ const env = {
     user: process.env.SMTP_USER,
     password: process.env.SMTP_PASSWORD,
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID?.trim() || '',
+  },
 };
 
 const validateEnv = () => {
