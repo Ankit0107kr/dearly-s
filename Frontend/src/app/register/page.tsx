@@ -7,7 +7,7 @@ import { GoogleSignInSection } from "@/components/auth/GoogleSignInSection";
 import { useAuth } from "@/lib/auth";
 import { Field } from "@/components/ui/Field";
 import {
-  digitsOnly,
+  phoneDigitsOnly,
   lettersOnly,
   passwordStrength,
   validateAll,
@@ -149,7 +149,7 @@ export default function RegisterPage() {
             placeholder="10-digit mobile"
             value={form.phone}
             error={errors.phone}
-            onChange={(e) => set("phone", digitsOnly(e.target.value, 10))}
+            onChange={(e) => set("phone", phoneDigitsOnly(e.target.value))}
             onBlur={() => blur("phone")}
           />
           <div>

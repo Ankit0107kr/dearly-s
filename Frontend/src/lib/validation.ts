@@ -72,13 +72,21 @@ export const validateConfirmPassword =
   (value) =>
     !value ? "Confirm your password" : value === original ? null : "Passwords do not match";
 
+const indianMobileDigits = (value: string) => {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("91") && digits.length > 10) {
+    digits = digits.slice(2);
+  }
+  return digits;
+};
+
 export const validatePhone =
   (required = true): Validator =>
   (value) => {
     const v = value.trim();
     if (!v) return required ? "Phone number is required" : null;
     if (/[^\d\s+-]/.test(v)) return "Phone can only contain numbers";
-    const digits = v.replace(/\D/g, "").replace(/^91/, "");
+    const digits = indianMobileDigits(v);
     return PHONE_IN.test(digits) ? null : "Enter a valid 10-digit mobile number";
   };
 
@@ -149,6 +157,9 @@ export const digitsOnly = (value: string, max?: number) => {
   const d = value.replace(/\D/g, "");
   return max ? d.slice(0, max) : d;
 };
+
+/** Allows 10-digit mobile or 12 digits with a leading 91 country code. */
+export const phoneDigitsOnly = (value: string) => digitsOnly(value, 12);
 
 export const lettersOnly = (value: string) => value.replace(/[0-9]/g, "");
 

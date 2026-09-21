@@ -24,6 +24,7 @@ import type { Address } from "@/lib/types";
 import { lookupPincode } from "@/lib/pincode";
 import {
   digitsOnly,
+  phoneDigitsOnly,
   lettersOnly,
   validateAll,
   validateEmail,
@@ -154,7 +155,7 @@ export function CheckoutFlow() {
     const raw = e.target.value;
     const value =
       key === "fullName" ? lettersOnly(raw)
-      : key === "phone" ? digitsOnly(raw, 10)
+      : key === "phone" ? phoneDigitsOnly(raw)
       : raw;
     setAddress((a) => ({ ...a, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
