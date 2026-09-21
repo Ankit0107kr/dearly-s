@@ -39,6 +39,8 @@ import { Motif } from "@/components/ui/Motif";
 const steps = ["Details", "Delivery", "Payment"] as const;
 type Step = (typeof steps)[number];
 
+const CHECKOUT_PATH = "/checkout";
+
 const DELIVERY_SLOTS = ["09:00 – 13:00", "13:00 – 17:00", "17:00 – 21:00"] as const;
 
 /** Scheduled delivery needs a date; the backend rejects anything in the past. */
@@ -101,6 +103,12 @@ export function CheckoutFlow() {
   const [errors, setErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [paying, setPaying] = useState(false);
   const pinAbort = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setStep("Details");
+    }
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -216,10 +224,7 @@ export function CheckoutFlow() {
     ).length === 0;
 
   const pay = async () => {
-    if (!user) {
-      router.push(`/login?next=${encodeURIComponent("/checkout")}`);
-      return;
-    }
+    if (!user) return;
 
     setPaying(true);
     setPaymentError(null);
@@ -287,6 +292,9 @@ export function CheckoutFlow() {
     }
   };
 
+  const signInNext = encodeURIComponent(CHECKOUT_PATH);
+  const showSignInGate = !authLoading && !user;
+
   if (hydrated && lines.length === 0) {
     return (
       <div className="shell flex flex-col items-center gap-5 py-[14vh] text-center">
@@ -341,7 +349,39 @@ export function CheckoutFlow() {
 
       <div className="mt-[4vh] grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <div className="rounded-lg border border-line bg-white p-6 sm:p-8">
-          {step === "Details" && (
+          {authLoading && (
+            <p className="text-sm text-ink-soft">Checking your account…</p>
+          )}
+
+          {showSignInGate && (
+            <div className="animate-fade flex flex-col gap-5">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight">Sign in to continue</h2>
+                <p className="mt-1 text-sm text-ink-soft">
+                  Checkout is tied to your account so we can save your address and order history.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href={`/login?next=${signInNext}`}
+                  className="rounded-xs gradient-accent px-8 py-4 text-center text-sm font-bold text-cream"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href={`/register?next=${signInNext}`}
+                  className="rounded-xs border border-ink/15 px-8 py-4 text-center text-sm font-bold"
+                >
+                  Create account
+                </Link>
+              </div>
+              <p className="text-2xs text-ink-faint">
+                Your bag is saved on this device until you complete checkout.
+              </p>
+            </div>
+          )}
+
+          {!authLoading && user && step === "Details" && (
             <form
               className="animate-fade flex flex-col gap-5"
               onSubmit={(e) => {
@@ -504,7 +544,7 @@ export function CheckoutFlow() {
             </form>
           )}
 
-          {step === "Delivery" && (
+          {!authLoading && user && step === "Delivery" && (
             <div className="animate-fade flex flex-col gap-5">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">How fast should it land?</h2>
@@ -602,7 +642,7 @@ export function CheckoutFlow() {
             </div>
           )}
 
-          {step === "Payment" && (
+          {!authLoading && user && step === "Payment" && (
             <div className="animate-fade flex flex-col gap-5">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">Review and pay</h2>
@@ -668,24 +708,12 @@ export function CheckoutFlow() {
                 <button
                   type="button"
                   onClick={pay}
-                  disabled={paying || authLoading}
+                  disabled={paying}
                   className="flex-1 rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60 sm:flex-none"
                 >
-                  {paying
-                    ? "Opening Razorpay…"
-                    : user
-                      ? `Pay ${formatMoney(summary.total)} securely`
-                      : "Sign in to pay"}
+                  {paying ? "Opening Razorpay…" : `Pay ${formatMoney(summary.total)} securely`}
                 </button>
               </div>
-
-              {/* Orders are created against an account, so say so before the form is filled. */}
-              {!authLoading && !user && (
-                <p className="text-2xs text-ink-soft">
-                  You&rsquo;ll be asked to sign in — your order and its history are saved to your
-                  account.
-                </p>
-              )}
 
               <p className="text-2xs text-ink-faint">
                 The final total is confirmed by our server before payment. 256-bit encrypted. By

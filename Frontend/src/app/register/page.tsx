@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { GoogleSignInSection } from "@/components/auth/GoogleSignInSection";
 import { useAuth } from "@/lib/auth";
 import { Field } from "@/components/ui/Field";
@@ -33,8 +33,22 @@ type Form = typeof BLANK;
 const STRENGTH = ["", "Very weak", "Weak", "Fair", "Good", "Strong"];
 
 export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="shell py-16 text-center text-sm text-ink-soft">Loading…</div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const { register, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/";
   const [form, setForm] = useState<Form>(BLANK);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof Form, boolean>>>({});
@@ -66,7 +80,7 @@ export default function RegisterPage() {
     setGoogleBusy(true);
     try {
       await loginWithGoogle(credential);
-      router.replace("/");
+      router.replace(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
     } finally {
@@ -91,7 +105,7 @@ export default function RegisterPage() {
         phone: form.phone.trim(),
         password: form.password,
       });
-      router.replace("/");
+      router.replace(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -210,7 +224,14 @@ export default function RegisterPage() {
         </div>
         <p className="mt-6 text-center text-sm text-ink-soft">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-accent-700 underline">
+          <Link
+            href={
+              next === "/"
+                ? "/login"
+                : `/login?next=${encodeURIComponent(next)}`
+            }
+            className="font-semibold text-accent-700 underline"
+          >
             Sign in
           </Link>
         </p>
