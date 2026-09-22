@@ -41,9 +41,28 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
+const google = asyncHandler(async (req, res) => {
+  const { user, token } = await authService.googleAuth(req.body.credential);
+  authService.setAuthCookie(res, token);
+
+  return sendSuccess(res, {
+    message: 'Login successful',
+    data: { user },
+  });
+});
+
+const config = asyncHandler(async (req, res) =>
+  sendSuccess(res, {
+    message: 'Auth config',
+    data: authService.getPublicConfig(),
+  })
+);
+
 module.exports = {
   register,
   login,
   logout,
   getMe,
+  google,
+  config,
 };

@@ -120,6 +120,8 @@ Auth uses HTTP-only cookie `access_token` (set by register/login).
 |--------|------|------|
 | POST | `/auth/register` | No |
 | POST | `/auth/login` | No |
+| POST | `/auth/google` | No — body `{ "credential": "<Google ID token>" }` |
+| GET | `/auth/config` | No — `{ googleConfigured, googleClientId? }` |
 | POST | `/auth/logout` | Yes |
 | GET | `/auth/me` | Yes |
 

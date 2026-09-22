@@ -13,7 +13,12 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
+const googleSchema = Joi.object({
+  credential: Joi.string().min(10).required(),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
+  googleSchema,
 };

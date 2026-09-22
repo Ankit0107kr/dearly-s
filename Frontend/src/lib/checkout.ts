@@ -1,4 +1,4 @@
-import { cartApi, orderApi, userApi } from "@/lib/api";
+import { cartApi, orderApi, userApi, type ApiAddress } from "@/lib/api";
 import type { ApiOrder, ApiPaymentIntent, DeliveryType } from "@/lib/api-types";
 import type { Address, CartLineView } from "@/lib/types";
 
@@ -26,6 +26,19 @@ async function pushCart(lines: CartLineView[]) {
       quantity: line.quantity,
     });
   }
+}
+
+export function checkoutAddressFromSaved(saved: ApiAddress, email: string): Address {
+  return {
+    fullName: saved.fullName,
+    email,
+    phone: saved.phone,
+    line1: saved.addressLine1,
+    line2: saved.addressLine2 ?? "",
+    city: saved.city,
+    state: saved.state,
+    pincode: saved.postalCode,
+  };
 }
 
 async function createAddress(address: Address) {
@@ -60,6 +73,7 @@ export function newIdempotencyKey() {
 export async function placeOrder({
   lines,
   address,
+  addressId,
   couponCode,
   shippingMethodId,
   deliveryDate,
@@ -68,6 +82,7 @@ export async function placeOrder({
 }: {
   lines: CartLineView[];
   address: Address;
+  addressId?: string;
   couponCode?: string | null;
   shippingMethodId?: string;
   deliveryDate?: string;
@@ -75,11 +90,11 @@ export async function placeOrder({
   idempotencyKey: string;
 }): Promise<PlacedOrderResult> {
   await pushCart(lines);
-  const saved = await createAddress(address);
+  const id = addressId ?? (await createAddress(address))._id;
 
   const res = await orderApi.create(
     {
-      addressId: saved._id,
+      addressId: id,
       ...(couponCode ? { couponCode } : {}),
       deliveryType: toDeliveryType(shippingMethodId),
       ...(deliveryDate ? { deliveryDate } : {}),

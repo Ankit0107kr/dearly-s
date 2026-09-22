@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth";
+import { GoogleSignInSection } from "@/components/auth/GoogleSignInSection";
+import { useAuth, type AuthUser } from "@/lib/auth";
 import { Field } from "@/components/ui/Field";
 import { validateEmail, validateRequired } from "@/lib/validation";
 
 export function LoginForm() {
-  const { login, user, loading: authLoading } = useAuth();
+  const { login, loginWithGoogle, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
@@ -18,6 +19,27 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
+  const afterAuth = (loggedIn: AuthUser) => {
+    if (loggedIn.role === "ADMIN" && (next === "/" || next.startsWith("/admin"))) {
+      router.replace(next.startsWith("/admin") ? next : "/admin");
+    } else {
+      router.replace(next);
+    }
+  };
+
+  const onGoogle = async (credential: string) => {
+    setError("");
+    setGoogleBusy(true);
+    try {
+      afterAuth(await loginWithGoogle(credential));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +52,7 @@ export function LoginForm() {
     if (found.email || found.password) return;
     setSubmitting(true);
     try {
-      const loggedIn = await login(email.trim().toLowerCase(), password);
-      if (loggedIn.role === "ADMIN" && (next === "/" || next.startsWith("/admin"))) {
-        router.replace(next.startsWith("/admin") ? next : "/admin");
-      } else {
-        router.replace(next);
-      }
+      afterAuth(await login(email.trim().toLowerCase(), password));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -56,7 +73,13 @@ export function LoginForm() {
         <p className="mt-1 text-sm text-ink-soft">
           Customers and admins use the same login. Admins are redirected to the portal.
         </p>
-        <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-4">
+          <GoogleSignInSection
+            onCredential={onGoogle}
+            onError={setError}
+            disabled={submitting || googleBusy}
+          />
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
           <Field
             label="Email"
             type="email"
@@ -83,12 +106,13 @@ export function LoginForm() {
           {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || googleBusy}
             className="rounded-md gradient-accent px-4 py-2.5 text-sm font-bold text-cream disabled:opacity-60"
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        </div>
         <p className="mt-6 text-center text-sm text-ink-soft">
           New here?{" "}
           <Link href="/register" className="font-semibold text-accent-700 underline">

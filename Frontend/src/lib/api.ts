@@ -56,6 +56,10 @@ export const authApi = {
     apiPost<{ user: ApiUser }>(API_PATHS.auth.register, json(body)),
   login: (body: Record<string, string>) =>
     apiPost<{ user: ApiUser }>(API_PATHS.auth.login, json(body)),
+  google: (credential: string) =>
+    apiPost<{ user: ApiUser }>(API_PATHS.auth.google, json({ credential })),
+  config: () =>
+    apiGet<{ googleConfigured: boolean; googleClientId?: string }>(API_PATHS.auth.config),
   logout: () => apiPost(API_PATHS.auth.logout),
   me: () => apiGet<{ user: ApiUser }>(API_PATHS.auth.me),
 };

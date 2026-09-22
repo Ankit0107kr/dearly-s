@@ -12,13 +12,19 @@ import {
   openRazorpay,
   type RazorpaySuccess,
 } from "@/lib/razorpay-client";
-import { newIdempotencyKey, placeOrder, toDeliveryType } from "@/lib/checkout";
-import { paymentApi } from "@/lib/api";
+import {
+  checkoutAddressFromSaved,
+  newIdempotencyKey,
+  placeOrder,
+  toDeliveryType,
+} from "@/lib/checkout";
+import { paymentApi, userApi, type ApiAddress } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Address } from "@/lib/types";
 import { lookupPincode } from "@/lib/pincode";
 import {
   digitsOnly,
+  phoneDigitsOnly,
   lettersOnly,
   validateAll,
   validateEmail,
@@ -32,6 +38,8 @@ import { Motif } from "@/components/ui/Motif";
 
 const steps = ["Details", "Delivery", "Payment"] as const;
 type Step = (typeof steps)[number];
+
+const CHECKOUT_PATH = "/checkout";
 
 const DELIVERY_SLOTS = ["09:00 – 13:00", "13:00 – 17:00", "17:00 – 21:00"] as const;
 
@@ -90,9 +98,55 @@ export function CheckoutFlow() {
 
   const [step, setStep] = useState<Step>("Details");
   const [address, setAddress] = useState<Address>(emptyAddress);
+  const [savedAddresses, setSavedAddresses] = useState<ApiAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
   const [errors, setErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [paying, setPaying] = useState(false);
   const pinAbort = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setStep("Details");
+    }
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    userApi
+      .addresses()
+      .then((res) => {
+        if (cancelled) return;
+        const list = res.data?.addresses ?? [];
+        setSavedAddresses(list);
+        const chosen = list.find((a) => a.isDefault) ?? list[0];
+        if (chosen) {
+          setSelectedAddressId(chosen._id);
+          setAddress(checkoutAddressFromSaved(chosen, user.email));
+        } else {
+          setSelectedAddressId("new");
+          setAddress({
+            ...emptyAddress,
+            fullName: [user.firstName, user.lastName].filter(Boolean).join(" "),
+            email: user.email,
+            phone: user.phone ?? "",
+          });
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSelectedAddressId("new");
+        setAddress((a) => ({
+          ...a,
+          fullName: a.fullName || [user.firstName, user.lastName].filter(Boolean).join(" "),
+          email: a.email || user.email,
+          phone: a.phone || user.phone || "",
+        }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => () => pinAbort.current?.abort(), []);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -109,7 +163,7 @@ export function CheckoutFlow() {
     const raw = e.target.value;
     const value =
       key === "fullName" ? lettersOnly(raw)
-      : key === "phone" ? digitsOnly(raw, 10)
+      : key === "phone" ? phoneDigitsOnly(raw)
       : raw;
     setAddress((a) => ({ ...a, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
@@ -135,20 +189,42 @@ export function CheckoutFlow() {
       });
   };
 
+  const usingSaved = selectedAddressId !== "new";
+
+  const pickSaved = (saved: ApiAddress) => {
+    setSelectedAddressId(saved._id);
+    setAddress(checkoutAddressFromSaved(saved, user?.email ?? address.email));
+    setErrors({});
+  };
+
+  const startNewAddress = () => {
+    setSelectedAddressId("new");
+    setAddress({
+      ...emptyAddress,
+      fullName: user ? [user.firstName, user.lastName].filter(Boolean).join(" ") : "",
+      email: user?.email ?? "",
+      phone: user?.phone ?? "",
+    });
+    setErrors({});
+  };
+
   const validateDetails = () => {
-    const next = validateAll(address as unknown as Record<string, string>, DETAIL_RULES);
+    const rules = usingSaved ? { email: validateEmail } : DETAIL_RULES;
+    const next = validateAll(address as unknown as Record<string, string>, rules);
     setErrors(next as Partial<Record<keyof Address, string>>);
     return Object.keys(next).length === 0;
   };
 
   const detailsComplete =
-    Object.keys(validateAll(address as unknown as Record<string, string>, DETAIL_RULES)).length === 0;
+    Object.keys(
+      validateAll(
+        address as unknown as Record<string, string>,
+        usingSaved ? { email: validateEmail } : DETAIL_RULES,
+      ),
+    ).length === 0;
 
   const pay = async () => {
-    if (!user) {
-      router.push(`/login?next=${encodeURIComponent("/checkout")}`);
-      return;
-    }
+    if (!user) return;
 
     setPaying(true);
     setPaymentError(null);
@@ -159,6 +235,7 @@ export function CheckoutFlow() {
       const { order, payment } = await placeOrder({
         lines,
         address,
+        ...(usingSaved ? { addressId: selectedAddressId } : {}),
         couponCode,
         shippingMethodId,
         ...(requiresSchedule ? { deliveryDate, deliverySlot } : {}),
@@ -215,6 +292,9 @@ export function CheckoutFlow() {
     }
   };
 
+  const signInNext = encodeURIComponent(CHECKOUT_PATH);
+  const showSignInGate = !authLoading && !user;
+
   if (hydrated && lines.length === 0) {
     return (
       <div className="shell flex flex-col items-center gap-5 py-[14vh] text-center">
@@ -269,7 +349,39 @@ export function CheckoutFlow() {
 
       <div className="mt-[4vh] grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <div className="rounded-lg border border-line bg-white p-6 sm:p-8">
-          {step === "Details" && (
+          {authLoading && (
+            <p className="text-sm text-ink-soft">Checking your account…</p>
+          )}
+
+          {showSignInGate && (
+            <div className="animate-fade flex flex-col gap-5">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight">Sign in to continue</h2>
+                <p className="mt-1 text-sm text-ink-soft">
+                  Checkout is tied to your account so we can save your address and order history.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href={`/login?next=${signInNext}`}
+                  className="rounded-xs gradient-accent px-8 py-4 text-center text-sm font-bold text-cream"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href={`/register?next=${signInNext}`}
+                  className="rounded-xs border border-ink/15 px-8 py-4 text-center text-sm font-bold"
+                >
+                  Create account
+                </Link>
+              </div>
+              <p className="text-2xs text-ink-faint">
+                Your bag is saved on this device until you complete checkout.
+              </p>
+            </div>
+          )}
+
+          {!authLoading && user && step === "Details" && (
             <form
               className="animate-fade flex flex-col gap-5"
               onSubmit={(e) => {
@@ -281,19 +393,78 @@ export function CheckoutFlow() {
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">Where is it going?</h2>
                 <p className="mt-1 text-sm text-ink-soft">
-                  We will send tracking to this email and text the courier updates.
+                  {savedAddresses.length
+                    ? "Your default address is selected. Pick another, or add a new one."
+                    : "We will send tracking to this email and text the courier updates."}
                 </p>
               </div>
 
+              {savedAddresses.length > 0 && (
+                <fieldset className="flex flex-col gap-3">
+                  <legend className="sr-only">Saved addresses</legend>
+                  {savedAddresses.map((saved) => {
+                    const active = selectedAddressId === saved._id;
+                    return (
+                      <label
+                        key={saved._id}
+                        className={`flex cursor-pointer gap-4 rounded-md border p-5 transition ${
+                          active ? "border-ink bg-cream" : "border-ink/12 hover:border-ink/30"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="checkout-address"
+                          checked={active}
+                          onChange={() => pickSaved(saved)}
+                          className="mt-1 size-4 accent-[var(--color-accent-600)]"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-bold">{saved.fullName}</span>
+                            {saved.isDefault && (
+                              <span className="rounded-xs bg-accent-600 px-2 py-0.5 text-2xs font-bold text-cream">
+                                Default
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-1 block text-xs text-ink-soft">
+                            {saved.addressLine1}
+                            {saved.addressLine2 ? `, ${saved.addressLine2}` : ""}
+                            {saved.landmark ? `, ${saved.landmark}` : ""}
+                            <br />
+                            {saved.city}, {saved.state} {saved.postalCode}
+                            <br />
+                            {saved.phone}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={startNewAddress}
+                    className={`rounded-md border border-dashed px-5 py-4 text-left text-sm font-bold transition ${
+                      selectedAddressId === "new"
+                        ? "border-ink bg-cream"
+                        : "border-ink/20 text-ink-soft hover:border-ink/40 hover:text-ink"
+                    }`}
+                  >
+                    + Add a new address
+                  </button>
+                </fieldset>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="Full name"
-                  value={address.fullName}
-                  onChange={set("fullName")}
-                  error={errors.fullName}
-                  autoComplete="name"
-                  placeholder="Ankit Kumar"
-                />
+                {(!usingSaved || savedAddresses.length === 0) && (
+                  <Field
+                    label="Full name"
+                    value={address.fullName}
+                    onChange={set("fullName")}
+                    error={errors.fullName}
+                    autoComplete="name"
+                    placeholder="Ankit Kumar"
+                  />
+                )}
                 <Field
                   label="Email"
                   type="email"
@@ -302,58 +473,63 @@ export function CheckoutFlow() {
                   error={errors.email}
                   autoComplete="email"
                   placeholder="you@example.com"
+                  className={usingSaved ? "sm:col-span-2" : undefined}
                 />
-                <Field
-                  label="Mobile"
-                  type="tel"
-                  value={address.phone}
-                  onChange={set("phone")}
-                  error={errors.phone}
-                  autoComplete="tel"
-                  placeholder="98765 43210"
-                />
-                <Field
-                  label="PIN code"
-                  inputMode="numeric"
-                  value={address.pincode}
-                  onChange={onPincode}
-                  error={errors.pincode}
-                  autoComplete="postal-code"
-                  placeholder="560001"
-                />
-                <Field
-                  label="Address line 1"
-                  className="sm:col-span-2"
-                  value={address.line1}
-                  onChange={set("line1")}
-                  error={errors.line1}
-                  autoComplete="address-line1"
-                  placeholder="Flat 402, Aralia Apartments"
-                />
-                <Field
-                  label="Address line 2 (optional)"
-                  className="sm:col-span-2"
-                  value={address.line2}
-                  onChange={set("line2")}
-                  autoComplete="address-line2"
-                  placeholder="Off 12th Main, Indiranagar"
-                />
-                <Field
-                  label="City"
-                  value={address.city}
-                  onChange={set("city")}
-                  error={errors.city}
-                  autoComplete="address-level2"
-                  placeholder="Bengaluru"
-                />
-                <Field
-                  label="State"
-                  value={address.state}
-                  onChange={set("state")}
-                  error={errors.state}
-                  autoComplete="address-level1"
-                  placeholder="Karnataka"
-                />
+                {!usingSaved && (
+                  <>
+                    <Field
+                      label="Mobile"
+                      type="tel"
+                      value={address.phone}
+                      onChange={set("phone")}
+                      error={errors.phone}
+                      autoComplete="tel"
+                      placeholder="98765 43210"
+                    />
+                    <Field
+                      label="PIN code"
+                      inputMode="numeric"
+                      value={address.pincode}
+                      onChange={onPincode}
+                      error={errors.pincode}
+                      autoComplete="postal-code"
+                      placeholder="560001"
+                    />
+                    <Field
+                      label="Address line 1"
+                      className="sm:col-span-2"
+                      value={address.line1}
+                      onChange={set("line1")}
+                      error={errors.line1}
+                      autoComplete="address-line1"
+                      placeholder="Flat 402, Aralia Apartments"
+                    />
+                    <Field
+                      label="Address line 2 (optional)"
+                      className="sm:col-span-2"
+                      value={address.line2}
+                      onChange={set("line2")}
+                      autoComplete="address-line2"
+                      placeholder="Off 12th Main, Indiranagar"
+                    />
+                    <Field
+                      label="City"
+                      value={address.city}
+                      onChange={set("city")}
+                      error={errors.city}
+                      autoComplete="address-level2"
+                      placeholder="Bengaluru"
+                    />
+                    <Field
+                      label="State"
+                      value={address.state}
+                      onChange={set("state")}
+                      error={errors.state}
+                      autoComplete="address-level1"
+                      placeholder="Karnataka"
+                    />
+                  </>
+                )}
               </div>
 
               <button
@@ -368,7 +544,7 @@ export function CheckoutFlow() {
             </form>
           )}
 
-          {step === "Delivery" && (
+          {!authLoading && user && step === "Delivery" && (
             <div className="animate-fade flex flex-col gap-5">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">How fast should it land?</h2>
@@ -466,7 +642,7 @@ export function CheckoutFlow() {
             </div>
           )}
 
-          {step === "Payment" && (
+          {!authLoading && user && step === "Payment" && (
             <div className="animate-fade flex flex-col gap-5">
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">Review and pay</h2>
@@ -514,21 +690,6 @@ export function CheckoutFlow() {
                 </div>
               </div>
 
-              <div className="rounded-md border border-line p-5">
-                <p className="text-2xs font-bold tracking-[0.12em] text-ink-faint uppercase">
-                  Payment methods accepted
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {["UPI", "Credit card", "Debit card", "Netbanking", "Wallets", "EMI"].map((m) => (
-                    <span
-                      key={m}
-                      className="rounded-xs border border-ink/12 bg-white px-4 py-2 text-2xs font-semibold"
-                    >
-                      {m}
-                    </span>
-                  ))}
-                </div>
-              </div>
 
               {paymentError && (
                 <p className="rounded-md border border-accent-600/40 bg-accent-50 px-5 py-4 text-sm text-accent-700">
@@ -547,24 +708,12 @@ export function CheckoutFlow() {
                 <button
                   type="button"
                   onClick={pay}
-                  disabled={paying || authLoading}
+                  disabled={paying}
                   className="flex-1 rounded-xs gradient-accent px-8 py-4 text-sm font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60 sm:flex-none"
                 >
-                  {paying
-                    ? "Opening Razorpay…"
-                    : user
-                      ? `Pay ${formatMoney(summary.total)} securely`
-                      : "Sign in to pay"}
+                  {paying ? "Opening Razorpay…" : `Pay ${formatMoney(summary.total)} securely`}
                 </button>
               </div>
-
-              {/* Orders are created against an account, so say so before the form is filled. */}
-              {!authLoading && !user && (
-                <p className="text-2xs text-ink-soft">
-                  You&rsquo;ll be asked to sign in — your order and its history are saved to your
-                  account.
-                </p>
-              )}
 
               <p className="text-2xs text-ink-faint">
                 The final total is confirmed by our server before payment. 256-bit encrypted. By

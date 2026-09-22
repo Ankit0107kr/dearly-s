@@ -38,6 +38,8 @@ export const API_PATHS = {
   auth: {
     register: "/auth/register",
     login: "/auth/login",
+    google: "/auth/google",
+    config: "/auth/config",
     logout: "/auth/logout",
     me: "/auth/me",
   },

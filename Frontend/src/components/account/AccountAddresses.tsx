@@ -8,6 +8,7 @@ import { Field, fieldClass } from "@/components/ui/Field";
 import {
   LIMITS,
   digitsOnly,
+  phoneDigitsOnly,
   lettersOnly,
   validateAll,
   validateName,
@@ -219,7 +220,7 @@ export function AccountAddresses() {
               placeholder="10-digit mobile"
               value={draft.phone}
               error={errors.phone}
-              onChange={(e) => set("phone", digitsOnly(e.target.value, 10))}
+              onChange={(e) => set("phone", phoneDigitsOnly(e.target.value))}
               onBlur={() => blur("phone")}
             />
             <Field

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { GoogleSignInSection } from "@/components/auth/GoogleSignInSection";
 import { useAuth } from "@/lib/auth";
 import { Field } from "@/components/ui/Field";
 import {
-  digitsOnly,
+  phoneDigitsOnly,
   lettersOnly,
   passwordStrength,
   validateAll,
@@ -32,13 +33,28 @@ type Form = typeof BLANK;
 const STRENGTH = ["", "Very weak", "Weak", "Fair", "Good", "Strong"];
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  return (
+    <Suspense
+      fallback={
+        <div className="shell py-16 text-center text-sm text-ink-soft">Loading…</div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
+  const { register, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/";
   const [form, setForm] = useState<Form>(BLANK);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof Form, boolean>>>({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const rules: Partial<Record<keyof Form, Validator>> = {
     firstName: validateName("First name"),
@@ -59,6 +75,19 @@ export default function RegisterPage() {
     setErrors((e) => ({ ...e, [key]: rules[key]?.(form[key]) ?? undefined }));
   };
 
+  const onGoogle = async (credential: string) => {
+    setError("");
+    setGoogleBusy(true);
+    try {
+      await loginWithGoogle(credential);
+      router.replace(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -76,7 +105,7 @@ export default function RegisterPage() {
         phone: form.phone.trim(),
         password: form.password,
       });
-      router.replace("/");
+      router.replace(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -90,7 +119,13 @@ export default function RegisterPage() {
     <div className="shell flex min-h-[70vh] items-center justify-center py-16">
       <div className="w-full max-w-md rounded-lg border border-line bg-cream p-8 shadow-soft">
         <h1 className="font-display text-2xl text-ink">Create account</h1>
-        <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-3">
+        <div className="mt-6 flex flex-col gap-3">
+          <GoogleSignInSection
+            onCredential={onGoogle}
+            onError={setError}
+            disabled={submitting || googleBusy}
+          />
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <Field
               label="First name"
@@ -128,7 +163,7 @@ export default function RegisterPage() {
             placeholder="10-digit mobile"
             value={form.phone}
             error={errors.phone}
-            onChange={(e) => set("phone", digitsOnly(e.target.value, 10))}
+            onChange={(e) => set("phone", phoneDigitsOnly(e.target.value))}
             onBlur={() => blur("phone")}
           />
           <div>
@@ -180,15 +215,23 @@ export default function RegisterPage() {
           )}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || googleBusy}
             className="mt-1 rounded-md gradient-accent px-4 py-2.5 text-sm font-bold text-cream disabled:opacity-60"
           >
             {submitting ? "Creating…" : "Register"}
           </button>
         </form>
+        </div>
         <p className="mt-6 text-center text-sm text-ink-soft">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-accent-700 underline">
+          <Link
+            href={
+              next === "/"
+                ? "/login"
+                : `/login?next=${encodeURIComponent(next)}`
+            }
+            className="font-semibold text-accent-700 underline"
+          >
             Sign in
           </Link>
         </p>

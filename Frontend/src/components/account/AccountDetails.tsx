@@ -5,7 +5,13 @@ import { userApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { ErrorNote, Panel } from "@/components/account/AccountUI";
 import { Field } from "@/components/ui/Field";
-import { digitsOnly, lettersOnly, validateAll, validateName, validatePhone } from "@/lib/validation";
+import {
+  lettersOnly,
+  phoneDigitsOnly,
+  validateAll,
+  validateName,
+  validatePhone,
+} from "@/lib/validation";
 
 
 export function AccountDetails() {
@@ -79,7 +85,7 @@ export function AccountDetails() {
             placeholder="10-digit mobile"
             value={form.phone}
             error={errors.phone}
-            onChange={(e) => set("phone", digitsOnly(e.target.value, 10))}
+            onChange={(e) => set("phone", phoneDigitsOnly(e.target.value))}
           />
           <Field label="Email" disabled value={user?.email ?? ""} hint="Cannot be changed" />
 
